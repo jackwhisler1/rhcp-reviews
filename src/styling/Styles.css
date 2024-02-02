@@ -1,0 +1,21 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+
+input {
+  caret-color: transparent;
+  /* For Firefox */
+}
+
+input::-moz-placeholder {
+  color: transparent;
+}
+
+input:-ms-input-placeholder {
+  color: transparent;
+}
+
+input::placeholder {
+  color: transparent;
+}
