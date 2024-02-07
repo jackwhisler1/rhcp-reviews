@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 // import axios from 'axios';
-import Song from './Song';
 import '../styling/Styles.css' 
 import BaseContainer from './Container';
 import StadiumArcadium from './stadium-arcadium-rankings.json';
