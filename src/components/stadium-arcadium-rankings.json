@@ -1,0 +1,312 @@
+{
+  "songs": [
+    {
+      "id": 1,
+      "songName": "Dani California",
+      "albumName": "Stadium Arcadium",
+      "trackNumber": 1,
+      "reviews": [
+        { "id": 1, "reviewerName": "Jack Whisler", "rating": 4.5 },
+        { "id": 2, "reviewerName": "Aidan Epstein", "rating": 7 },
+        { "id": 3, "reviewerName": "Alex Strauss", "rating": 7 }
+      ]
+    },
+    {
+      "id": 2,
+      "songName": "Snow (Hey Oh)",
+      "albumName": "Stadium Arcadium",
+      "trackNumber": 2,
+      "reviews": [
+        { "id": 4, "reviewerName": "Jack Whisler", "rating": 8.5 },
+        { "id": 5, "reviewerName": "Aidan Epstein", "rating": 9.5 },
+        { "id": 6, "reviewerName": "Alex Strauss", "rating": 9 }
+      ]
+    },
+    {
+      "id": 3,
+      "songName": "Charlie",
+      "albumName": "Stadium Arcadium",
+      "trackNumber": 3,
+      "reviews": [
+        { "id": 7, "reviewerName": "Jack Whisler", "rating": 6 },
+        { "id": 8, "reviewerName": "Aidan Epstein", "rating": 7 },
+        { "id": 9, "reviewerName": "Alex Strauss", "rating": 5 }
+      ]
+    },
+    {
+      "id": 4,
+      "songName": "Stadium Arcadium",
+      "albumName": "Stadium Arcadium",
+      "trackNumber": 4,
+      "reviews": [
+        { "id": 10, "reviewerName": "Jack Whisler", "rating": 5 },
+        { "id": 11, "reviewerName": "Aidan Epstein", "rating": 6 },
+        { "id": 12, "reviewerName": "Alex Strauss", "rating": 6 }
+      ]
+    },
+    {
+      "id": 5,
+      "songName": "Hump de Bump",
+      "albumName": "Stadium Arcadium",
+      "trackNumber": 5,
+      "reviews": [
+        { "id": 13, "reviewerName": "Jack Whisler", "rating": 4.5 },
+        { "id": 14, "reviewerName": "Aidan Epstein", "rating": 5.5 },
+        { "id": 15, "reviewerName": "Alex Strauss", "rating": 6 }
+      ]
+    },
+    {
+      "id": 6,
+      "songName": "She's Only 18",
+      "albumName": "Stadium Arcadium",
+      "trackNumber": 6,
+      "reviews": [
+        { "id": 16, "reviewerName": "Jack Whisler", "rating": 7.5 },
+        { "id": 17, "reviewerName": "Aidan Epstein", "rating": 6.5 },
+        { "id": 18, "reviewerName": "Alex Strauss", "rating": 5.5 }
+      ]
+    },
+    {
+      "id": 7,
+      "songName": "Slow Cheetah",
+      "albumName": "Stadium Arcadium",
+      "trackNumber": 7,
+      "reviews": [
+        { "id": 19, "reviewerName": "Jack Whisler", "rating": 6 },
+        { "id": 20, "reviewerName": "Aidan Epstein", "rating": 8 },
+        { "id": 21, "reviewerName": "Alex Strauss", "rating": 6 }
+      ]
+    },
+    {
+      "id": 8,
+      "songName": "Torture Me",
+      "albumName": "Stadium Arcadium",
+      "trackNumber": 8,
+      "reviews": [
+        { "id": 22, "reviewerName": "Jack Whisler", "rating": 6 },
+        { "id": 23, "reviewerName": "Aidan Epstein", "rating": 5.5 },
+        { "id": 24, "reviewerName": "Alex Strauss", "rating": 7 }
+      ]
+    },
+    {
+      "id": 9,
+      "songName": "Strip My Mind",
+      "albumName": "Stadium Arcadium",
+      "trackNumber": 9,
+      "reviews": [
+        { "id": 25, "reviewerName": "Jack Whisler", "rating": 4.5 },
+        { "id": 26, "reviewerName": "Aidan Epstein", "rating": 5 },
+        { "id": 27, "reviewerName": "Alex Strauss", "rating": 6 }
+      ]
+    },
+    {
+      "id": 10,
+      "songName": "Especially in Michigan",
+      "albumName": "Stadium Arcadium",
+      "trackNumber": 10,
+      "reviews": [
+        { "id": 28, "reviewerName": "Jack Whisler", "rating": 3 },
+        { "id": 29, "reviewerName": "Aidan Epstein", "rating": 7.5 },
+        { "id": 30, "reviewerName": "Alex Strauss", "rating": 4.5 }
+      ]
+    },
+    {
+      "id": 11,
+      "songName": "Warlocks",
+      "albumName": "Stadium Arcadium",
+      "trackNumber": 11,
+      "reviews": [
+        { "id": 31, "reviewerName": "Jack Whisler", "rating": 2.5 },
+        { "id": 32, "reviewerName": "Aidan Epstein", "rating": 6 },
+        { "id": 33, "reviewerName": "Alex Strauss", "rating": 7.5 }
+      ]
+    },
+    {
+      "id": 12,
+      "songName": "C'mon Girl",
+      "albumName": "Stadium Arcadium",
+      "trackNumber": 12,
+      "reviews": [
+        { "id": 34, "reviewerName": "Jack Whisler", "rating": 8 },
+        { "id": 35, "reviewerName": "Aidan Epstein", "rating": 6.5 },
+        { "id": 36, "reviewerName": "Alex Strauss", "rating": 6.5 }
+      ]
+    },
+    {
+      "id": 13,
+      "songName": "Wet Sand",
+      "albumName": "Stadium Arcadium",
+      "trackNumber": 13,
+      "reviews": [
+        { "id": 37, "reviewerName": "Jack Whisler", "rating": 5 },
+        { "id": 38, "reviewerName": "Aidan Epstein", "rating": 6.5 },
+        { "id": 39, "reviewerName": "Alex Strauss", "rating": 7 }
+      ]
+    },
+    {
+      "id": 14,
+      "songName": "Hey",
+      "albumName": "Stadium Arcadium",
+      "trackNumber": 14,
+      "reviews": [
+        { "id": 40, "reviewerName": "Jack Whisler", "rating": 6.5 },
+        { "id": 41, "reviewerName": "Aidan Epstein", "rating": 6.5 },
+        { "id": 42, "reviewerName": "Alex Strauss", "rating": 6 }
+      ]
+    },
+    {
+      "id": 15,
+      "songName": "Desecration Smile",
+      "albumName": "Stadium Arcadium",
+      "trackNumber": 15,
+      "reviews": [
+        { "id": 43, "reviewerName": "Jack Whisler", "rating": 6 },
+        { "id": 44, "reviewerName": "Aidan Epstein", "rating": 7 },
+        { "id": 45, "reviewerName": "Alex Strauss", "rating": 4.5 }
+      ]
+    },
+    {
+      "id": 16,
+      "songName": "Tell Me Baby",
+      "albumName": "Stadium Arcadium",
+      "trackNumber": 16,
+      "reviews": [
+        { "id": 46, "reviewerName": "Jack Whisler", "rating": 2.5 },
+        { "id": 47, "reviewerName": "Aidan Epstein", "rating": 4.5 },
+        { "id": 48, "reviewerName": "Alex Strauss", "rating": 5 }
+      ]
+    },
+    {
+      "id": 17,
+      "songName": "21st Century",
+      "albumName": "Stadium Arcadium",
+      "trackNumber": 17,
+      "reviews": [
+        { "id": 49, "reviewerName": "Jack Whisler", "rating": 5 },
+        { "id": 50, "reviewerName": "Aidan Epstein", "rating": 6.5 },
+        { "id": 51, "reviewerName": "Alex Strauss", "rating": 6 }
+      ]
+    },
+    {
+      "id": 18,
+      "songName": "Readymade",
+      "albumName": "Stadium Arcadium",
+      "trackNumber": 18,
+      "reviews": [
+        { "id": 52, "reviewerName": "Jack Whisler", "rating": 4.5 },
+        { "id": 53, "reviewerName": "Aidan Epstein", "rating": 7.5 },
+        { "id": 54, "reviewerName": "Alex Strauss", "rating": 4.5 }
+      ]
+    },
+    {
+      "id": 19,
+      "songName": "If",
+      "albumName": "Stadium Arcadium",
+      "trackNumber": 19,
+      "reviews": [
+        { "id": 55, "reviewerName": "Jack Whisler", "rating": 5.5 },
+        { "id": 56, "reviewerName": "Aidan Epstein", "rating": 6.5 },
+        { "id": 57, "reviewerName": "Alex Strauss", "rating": 5 }
+      ]
+    },
+    {
+      "id": 20,
+      "songName": "Make You Feel Better",
+      "albumName": "Stadium Arcadium",
+      "trackNumber": 20,
+      "reviews": [
+        { "id": 58, "reviewerName": "Jack Whisler", "rating": 3.5 },
+        { "id": 59, "reviewerName": "Aidan Epstein", "rating": 7.5 },
+        { "id": 60, "reviewerName": "Alex Strauss", "rating": 6 }
+      ]
+    },
+    {
+      "id": 21,
+      "songName": "Animal Bar",
+      "albumName": "Stadium Arcadium",
+      "trackNumber": 21,
+      "reviews": [
+        { "id": 61, "reviewerName": "Jack Whisler", "rating": 2 },
+        { "id": 62, "reviewerName": "Aidan Epstein", "rating": 6 },
+        { "id": 63, "reviewerName": "Alex Strauss", "rating": 5.5 }
+      ]
+    },
+    {
+      "id": 22,
+      "songName": "So Much I",
+      "albumName": "Stadium Arcadium",
+      "trackNumber": 22,
+      "reviews": [
+        { "id": 64, "reviewerName": "Jack Whisler", "rating": 1.5 },
+        { "id": 65, "reviewerName": "Aidan Epstein", "rating": 4.5 },
+        { "id": 66, "reviewerName": "Alex Strauss", "rating": 6 }
+      ]
+    },
+    {
+      "id": 23,
+      "songName": "Storm in a Teacup",
+      "albumName": "Stadium Arcadium",
+      "trackNumber": 23,
+      "reviews": [
+        { "id": 67, "reviewerName": "Jack Whisler", "rating": 4.5 },
+        { "id": 68, "reviewerName": "Aidan Epstein", "rating": 6.5 },
+        { "id": 69, "reviewerName": "Alex Strauss", "rating": 5 }
+      ]
+    },
+    {
+      "id": 24,
+      "songName": "We Believe",
+      "albumName": "Stadium Arcadium",
+      "trackNumber": 24,
+      "reviews": [
+        { "id": 70, "reviewerName": "Jack Whisler", "rating": 7 },
+        { "id": 71, "reviewerName": "Aidan Epstein", "rating": 7.5 },
+        { "id": 72, "reviewerName": "Alex Strauss", "rating": 6 }
+      ]
+    },
+    {
+      "id": 25,
+      "songName": "Turn It Again",
+      "albumName": "Stadium Arcadium",
+      "trackNumber": 25,
+      "reviews": [
+        { "id": 73, "reviewerName": "Jack Whisler", "rating": 5.5 },
+        { "id": 74, "reviewerName": "Aidan Epstein", "rating": 6 },
+        { "id": 75, "reviewerName": "Alex Strauss", "rating": 5.5 }
+      ]
+    },
+    {
+      "id": 26,
+      "songName": "Death of a Martian",
+      "albumName": "Stadium Arcadium",
+      "trackNumber": 26,
+      "reviews": [
+        { "id": 76, "reviewerName": "Jack Whisler", "rating": 7 },
+        { "id": 77, "reviewerName": "Aidan Epstein", "rating": 4.5 },
+        { "id": 78, "reviewerName": "Alex Strauss", "rating": 6.5 }
+      ]
+    },
+    {
+      "id": 27,
+      "songName": "Hard to Concentrate",
+      "albumName": "Stadium Arcadium",
+      "trackNumber": 27,
+      "reviews": [
+        { "id": 79, "reviewerName": "Jack Whisler", "rating": 4.5 },
+        { "id": 80, "reviewerName": "Aidan Epstein", "rating": 6.5 },
+        { "id": 81, "reviewerName": "Alex Strauss", "rating": 6 }
+      ]
+    },
+    {
+      "id": 28,
+      "songName": "She Looks to Me",
+      "albumName": "Stadium Arcadium",
+      "trackNumber": 28,
+      "reviews": [
+        { "id": 82, "reviewerName": "Jack Whisler", "rating": 7.5 },
+        { "id": 83, "reviewerName": "Aidan Epstein", "rating": 8 },
+        { "id": 84, "reviewerName": "Alex Strauss", "rating": 6 }
+      ]
+    }
+  ]
+}
