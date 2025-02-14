@@ -1,5 +1,5 @@
 datasource db {
-  provider = "postgresql" 
+  provider = "postgresql"
   url      = env("DATABASE_URL")
 }
 
@@ -8,35 +8,37 @@ generator client {
 }
 
 model User {
-  id        Int      @id @default(autoincrement())
-  username  String   @unique
-  email     String   @unique
-  image     String?
-  reviews   Review[]
+  id       Int      @id @default(autoincrement())
+  username String   @unique
+  email    String   @unique
+  image    String?
+  reviews  Review[]
 }
 
 model Album {
-  id           Int      @id @default(autoincrement())
-  title        String
-  releaseDate  DateTime
-  artworkUrl   String
-  songs        Song[]
+  id          Int      @id @default(autoincrement())
+  title       String
+  releaseDate DateTime
+  artworkUrl  String
+  songs       Song[]
 }
 
 model Song {
-  id         Int      @id @default(autoincrement())
-  title      String
-  albumId    Int
-  album      Album    @relation(fields: [albumId], references: [id])
-  reviews    Review[]
+  id          Int      @id @default(autoincrement())
+  title       String
+  trackNumber Int
+  albumId     Int
+  duration    String
+  album       Album    @relation(fields: [albumId], references: [id])
+  reviews     Review[]
 }
 
 model Review {
-  id         Int      @id @default(autoincrement())
-  rating     Float    // For scores 0.1 to 10.0
+  id         Int    @id @default(autoincrement())
+  rating     Float // For scores 0.1 to 10.0
   reviewText String
   userId     Int
   songId     Int
-  user       User     @relation(fields: [userId], references: [id])
-  song       Song     @relation(fields: [songId], references: [id])
+  user       User   @relation(fields: [userId], references: [id])
+  song       Song   @relation(fields: [songId], references: [id])
 }
