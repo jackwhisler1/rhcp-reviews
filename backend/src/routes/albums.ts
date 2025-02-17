@@ -13,7 +13,7 @@ const router = express.Router();
 
 interface CreateAlbumRequestBody {
   title: string;
-  releaseDate: string; // Assuming it's in ISO format YYYY-MM-DD
+  releaseDate: string; 
   artworkUrl: string;
 }
 
