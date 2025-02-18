@@ -1,12 +1,12 @@
 import { Prisma } from "@prisma/client";
-import prisma from "../db/prisma";
+import prisma from "../db/prisma.js";
 import {
   NotFoundError,
   ForbiddenError,
   BadRequestError,
-} from "../errors/customErrors";
+} from "../errors/customErrors.js";
 import crypto from "crypto";
-import { sendInvitationEmail } from "./email.service";
+import { sendInvitationEmail } from "./email.service.js";
 
 interface CreateGroupInput {
   name: string;

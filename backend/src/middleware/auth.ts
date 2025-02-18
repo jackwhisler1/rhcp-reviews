@@ -1,7 +1,7 @@
 import { Request, Response, NextFunction } from "express";
 import jwt from "jsonwebtoken";
-import prisma from "../db/prisma";
-import { AuthenticationError } from "../errors/customErrors";
+import prisma from "../db/prisma.js";
+import { AuthenticationError } from "../errors/customErrors.js";
 
 export const authenticate = async (
   req: Request,

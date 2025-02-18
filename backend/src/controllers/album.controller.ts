@@ -3,8 +3,8 @@ import {
   createAlbumService,
   getAlbumStatsService,
   getPaginatedAlbumsService,
-} from "../services/album.service";
-import asyncHandler from "../middleware/asyncRouteHandler";
+} from "../services/album.service.js";
+import asyncHandler from "../middleware/asyncRouteHandler.js";
 
 export const createAlbumController = asyncHandler(
   async (req: Request, res: Response) => {

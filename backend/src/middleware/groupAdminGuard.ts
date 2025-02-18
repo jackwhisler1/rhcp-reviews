@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from "express";
-import prisma from "../db/prisma";
-import { ForbiddenError } from "../errors/customErrors";
+import prisma from "../db/prisma.js";
+import { ForbiddenError } from "../errors/customErrors.js";
 
 export const groupAdminGuard = async (
   req: Request,

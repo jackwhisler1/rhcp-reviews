@@ -5,14 +5,14 @@ import {
   getCurrentUserController,
   updateUserController,
   deleteUserController,
-} from "../controllers/user.controller";
-import { validate } from "../middleware/validate";
+} from "../controllers/user.controller.js";
+import { validate } from "../middleware/validate.js";
 import {
   registrationSchema,
   loginSchema,
   updateUserSchema,
-} from "../validators/user.validator";
-import { authenticate } from "../middleware/auth";
+} from "../validators/user.validator.js";
+import { authenticate } from "../middleware/auth.js";
 
 const router = express.Router();
 

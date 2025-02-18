@@ -1,6 +1,6 @@
 import { Prisma } from "@prisma/client";
-import prisma from "../db/prisma";
-import { NotFoundError, ValidationError } from "../errors/customErrors";
+import prisma from "../db/prisma.js";
+import { NotFoundError, ValidationError } from "../errors/customErrors.js";
 
 export const getSongsService = async (filters: {
   albumId?: string;

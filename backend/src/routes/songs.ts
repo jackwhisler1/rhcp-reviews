@@ -5,10 +5,10 @@ import {
   createSongController,
   updateSongController,
   deleteSongController,
-} from "../controllers/song.controller";
-import { validate } from "../middleware/validate";
-import { songSchema } from "../validators/song.validator";
-import { authenticate } from "../middleware/auth";
+} from "../controllers/song.controller.js";
+import { validate } from "../middleware/validate.js";
+import { songSchema } from "../validators/song.validator.js";
+import { authenticate } from "../middleware/auth.js";
 
 const router = express.Router();
 

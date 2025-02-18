@@ -4,10 +4,10 @@ import {
   loginUserService,
   getCurrentUserService,
   deleteUserService,
-} from "../services/user.service";
-import asyncHandler from "../middleware/asyncRouteHandler";
-import { UpdateUserInput } from "../validators/user.validator";
-import prisma from "../db/prisma";
+} from "../services/user.service.js";
+import asyncHandler from "../middleware/asyncRouteHandler.js";
+import { UpdateUserInput } from "../validators/user.validator.js";
+import prisma from "../db/prisma.js";
 import bcrypt from "bcryptjs";
 
 const saltRounds = 10;

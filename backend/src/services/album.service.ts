@@ -1,5 +1,5 @@
 import { Prisma } from "@prisma/client";
-import prisma from "../db/prisma";
+import prisma from "../db/prisma.js";
 
 export const createAlbumService = async (data: Prisma.AlbumCreateInput) => {
   return prisma.album.create({ data });

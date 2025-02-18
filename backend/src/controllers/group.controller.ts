@@ -6,8 +6,8 @@ import {
   sendGroupInviteService,
   joinGroupService,
   getUserGroupsService,
-} from "../services/group.service";
-import asyncHandler from "../middleware/asyncRouteHandler";
+} from "../services/group.service.js";
+import asyncHandler from "../middleware/asyncRouteHandler.js";
 
 export const createGroupController = asyncHandler(
   async (req: Request, res: Response) => {

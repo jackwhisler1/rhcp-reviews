@@ -5,8 +5,8 @@ import {
   createSongService,
   updateSongService,
   deleteSongService,
-} from "../services/song.service";
-import asyncHandler from "../middleware/asyncRouteHandler";
+} from "../services/song.service.js";
+import asyncHandler from "../middleware/asyncRouteHandler.js";
 
 export const getSongsController = asyncHandler(
   async (req: Request, res: Response) => {

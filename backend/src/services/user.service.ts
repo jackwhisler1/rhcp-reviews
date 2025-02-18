@@ -1,12 +1,12 @@
 import { Prisma } from "@prisma/client";
-import prisma from "../db/prisma";
+import prisma from "../db/prisma.js";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import {
   AuthenticationError,
   ValidationError,
   NotFoundError,
-} from "../errors/customErrors";
+} from "../errors/customErrors.js";
 
 const saltRounds = 10;
 

@@ -24,7 +24,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 dotenv.config();
 // Express setup
-const app = express();
+export const app = express();
 const PORT = process.env.PORT || 5000;
 if (!process.env.JWT_SECRET) {
   throw new Error("JWT_SECRET environment variable is not defined");

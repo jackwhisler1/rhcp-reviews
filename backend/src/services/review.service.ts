@@ -1,10 +1,10 @@
 import { Prisma } from "@prisma/client";
-import prisma from "../db/prisma";
+import prisma from "../db/prisma.js";
 import {
   NotFoundError,
   ForbiddenError,
   ValidationError,
-} from "../errors/customErrors";
+} from "../errors/customErrors.js";
 
 // Type for review filters
 interface ReviewFilters {

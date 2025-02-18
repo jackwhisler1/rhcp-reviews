@@ -6,10 +6,10 @@ import {
   sendInviteController,
   joinGroupController,
   getUserGroupsController,
-} from "../controllers/group.controller";
-import { authenticate } from "../middleware/auth";
-import { validate } from "../middleware/validate";
-import { groupSchema } from "../validators/group.validator";
+} from "../controllers/group.controller.js";
+import { authenticate } from "../middleware/auth.js";
+import { validate } from "../middleware/validate.js";
+import { groupSchema } from "../validators/group.validator.js";
 
 const router = express.Router();
 

@@ -2,8 +2,8 @@ import { Request, Response } from "express";
 import {
   createReviewService,
   getReviewsService,
-} from "../services/review.service";
-import asyncHandler from "../middleware/asyncRouteHandler";
+} from "../services/review.service.js";
+import asyncHandler from "../middleware/asyncRouteHandler.js";
 
 export const createReviewController = asyncHandler(
   async (req: Request, res: Response) => {
