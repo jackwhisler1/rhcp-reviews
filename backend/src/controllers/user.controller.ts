@@ -8,7 +8,7 @@ import {
 import asyncHandler from "../middleware/asyncRouteHandler";
 import { UpdateUserInput } from "../validators/user.validator";
 import prisma from "../db/prisma";
-import bcrypt from "bcrypt";
+import bcrypt from "bcryptjs";
 
 const saltRounds = 10;
 

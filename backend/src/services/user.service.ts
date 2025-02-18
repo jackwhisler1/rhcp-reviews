@@ -1,6 +1,6 @@
 import { Prisma } from "@prisma/client";
 import prisma from "../db/prisma";
-import bcrypt from "bcrypt";
+import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import {
   AuthenticationError,
