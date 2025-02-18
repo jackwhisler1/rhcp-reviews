@@ -7,14 +7,6 @@ generator client {
   provider = "prisma-client-js"
 }
 
-model User {
-  id       Int      @id @default(autoincrement())
-  username String   @unique
-  email    String   @unique
-  image    String?
-  reviews  Review[]
-}
-
 model Album {
   id          Int      @id @default(autoincrement())
   title       String
@@ -33,12 +25,49 @@ model Song {
   reviews     Review[]
 }
 
+model User {
+  id       Int         @id @default(autoincrement())
+  username String      @unique
+  email    String      @unique
+  password String
+  image    String?
+  groups   UserGroup[]
+  reviews  Review[]
+}
+
+model Group {
+  id          Int         @id @default(autoincrement())
+  name        String
+  description String?
+  image       String?
+  isPrivate   Boolean     @default(false)
+  inviteCode  String?     @unique
+  members     UserGroup[]
+  createdAt   DateTime    @default(now())
+  reviews     Review[]
+}
+
+model UserGroup {
+  user     User     @relation(fields: [userId], references: [id])
+  userId   Int
+  group    Group    @relation(fields: [groupId], references: [id])
+  groupId  Int
+  role     String   @default("member") // 'admin' or 'member'
+  joinedAt DateTime @default(now())
+
+  @@id([userId, groupId])
+  @@index([groupId])
+}
+
 model Review {
-  id         Int    @id @default(autoincrement())
-  rating     Float // For scores 0.1 to 10.0
-  reviewText String
-  userId     Int
-  songId     Int
-  user       User   @relation(fields: [userId], references: [id])
-  song       Song   @relation(fields: [songId], references: [id])
+  id        Int      @id @default(autoincrement())
+  content   String
+  rating    Float
+  song      Song     @relation(fields: [songId], references: [id])
+  songId    Int
+  author    User     @relation(fields: [userId], references: [id])
+  userId    Int
+  createdAt DateTime @default(now())
+  group     Group?   @relation(fields: [groupId], references: [id])
+  groupId   Int?
 }

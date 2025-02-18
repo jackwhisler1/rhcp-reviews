@@ -1,8 +1,8 @@
 import express, { Request, Response, NextFunction } from "express";
 import { PrismaClient } from "@prisma/client";
 import asyncRouteHandler from "../middleware/asyncRouteHandler.js";
+import prisma from "../db/prisma";
 
-const prisma = new PrismaClient();
 const router = express.Router();
 
 // Get all songs

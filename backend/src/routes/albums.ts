@@ -4,16 +4,16 @@ import asyncRouteHandler from "../middleware/asyncRouteHandler.js";
 import path from "path";
 import { fileURLToPath } from "url";
 import { dirname } from "path";
+import prisma from "../db/prisma";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
-const prisma = new PrismaClient();
 const router = express.Router();
 
 interface CreateAlbumRequestBody {
   title: string;
-  releaseDate: string; 
+  releaseDate: string;
   artworkUrl: string;
 }
 
