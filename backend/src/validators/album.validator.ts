@@ -1,0 +1,21 @@
+import { z } from "zod";
+
+const currentYear = new Date().getFullYear();
+
+export const albumSchema = z.object({
+  title: z
+    .string()
+    .min(2, "Title must be at least 2 characters")
+    .max(100, "Title too long (max 100 characters)"),
+  releaseDate: z.coerce
+    .date()
+    .max(new Date(), "Release date cannot be in the future")
+    .refine((date) => date.getFullYear() >= 1900, "Invalid release year"),
+  artworkUrl: z
+    .string()
+    .url("Invalid artwork URL")
+    .regex(/\.(jpeg|jpg|png|webp)$/i, "Invalid image format"),
+  artist: z.string().optional(),
+});
+
+export type AlbumInput = z.infer<typeof albumSchema>;

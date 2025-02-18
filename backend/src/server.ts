@@ -6,7 +6,7 @@ import { fileURLToPath } from "url";
 import { dirname } from "path";
 import expressMongoSanitize from "express-mongo-sanitize";
 import rateLimit from "express-rate-limit";
-
+import multer from "multer";
 // Routes
 import albumsRouter from "./routes/albums.js";
 import songsRouter from "./routes/songs.js";
@@ -17,6 +17,7 @@ import reviewRoutes from "./routes/reviews.js";
 // Middleware
 import { errorHandler } from "./middleware/errorHandler.js";
 import { authenticate } from "./middleware/auth.js";
+import asyncRouteHandler from "./middleware/asyncRouteHandler.js";
 
 // Config
 const __filename = fileURLToPath(import.meta.url);
@@ -42,6 +43,17 @@ app.use("/api/", apiLimiter);
 
 // Static files
 app.use("/images", express.static(path.join(__dirname, "./images")));
+
+const upload = multer({ dest: "uploads/" });
+app.post(
+  "/api/upload",
+  authenticate,
+  upload.single("image"),
+  asyncRouteHandler(async (req, res) => {
+    // Handle file storage (S3/local)
+    res.json({ url: `/images/${req.file?.filename}` });
+  })
+);
 
 // Routes
 app.use("/api/albums", albumsRouter);
