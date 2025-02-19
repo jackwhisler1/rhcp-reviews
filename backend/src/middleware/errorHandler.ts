@@ -7,7 +7,13 @@ export const errorHandler = (
   req: Request,
   res: Response
 ): void => {
-  console.error(err instanceof Error ? err.stack : String(err));
+  console.error("Error:", {
+    message: err instanceof Error ? err.message : "Unknown error",
+    stack: err instanceof Error ? err.stack : undefined,
+    body: req.body,
+    method: req.method,
+    url: req.originalUrl,
+  });
 
   if (err instanceof Error) {
     console.error("Error Stack:", err.stack);

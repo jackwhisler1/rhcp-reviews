@@ -14,17 +14,17 @@ beforeEach(async () => {
 // Setup test environment once at the root level
 setupTestEnvironment();
 
-const unique = Date.now();
-
 it("should register/login/access protected route", async () => {
   const unique = Date.now();
-  const registerRes = await request(app)
-    .post("/api/users/register")
-    .send({
-      username: `testuser${unique}`,
-      email: `test${unique}@example.com`,
-      password: "test1234",
-    });
-
+  const registerRes = await request(app).post("/api/users/register").send({
+    username: `testuser333`,
+    email: `test333@example.com`,
+    password: "Test123!",
+  });
+  console.log(
+    "Register Response:",
+    registerRes.status,
+    JSON.stringify(registerRes.body, null, 2)
+  );
   expect(registerRes.status).toBe(201);
 });

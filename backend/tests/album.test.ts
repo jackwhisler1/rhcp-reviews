@@ -64,7 +64,7 @@ describe("Album Operations", () => {
 
     // Update Album
     const updateRes = await request(app)
-      .put(`/api/albums/stats/${albumId}`)
+      .put(`/api/albums/${albumId}`)
       .set("Authorization", `Bearer ${authToken}`)
       .send({
         title: "Updated Title",

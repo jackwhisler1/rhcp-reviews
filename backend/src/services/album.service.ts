@@ -69,14 +69,13 @@ export const updateAlbumService = async (
   id: number,
   data: Prisma.AlbumUpdateInput
 ) => {
+  if (data.releaseDate && typeof data.releaseDate === "string") {
+    data.releaseDate = new Date(data.releaseDate);
+  }
+
   return prisma.album.update({
     where: { id },
-    data: {
-      ...data,
-      releaseDate: data.releaseDate
-        ? new Date(data.releaseDate as string)
-        : undefined,
-    },
+    data,
   });
 };
 

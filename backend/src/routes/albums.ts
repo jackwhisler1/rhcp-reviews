@@ -8,14 +8,27 @@ import {
 } from "../controllers/album.controller.js";
 import { authenticate } from "../middleware/auth.js";
 import { validate } from "../middleware/validate.js";
-import { albumSchema } from "../validators/album.validator.js";
+import {
+  createAlbumSchema,
+  updateAlbumSchema,
+} from "../validators/album.validator.js";
 
 const router = express.Router();
 
-router.post("/", authenticate, validate(albumSchema), createAlbumController);
+router.post(
+  "/",
+  authenticate,
+  validate(createAlbumSchema),
+  createAlbumController
+);
 router.get("/stats/:albumId", getAlbumStatsController);
 router.get("/", getAlbumsController);
-router.put("/:id", authenticate, validate(albumSchema), updateAlbumController);
+router.put(
+  "/:id",
+  authenticate,
+  validate(updateAlbumSchema),
+  updateAlbumController
+);
 router.delete("/:id", authenticate, deleteAlbumController);
 
 export default router;

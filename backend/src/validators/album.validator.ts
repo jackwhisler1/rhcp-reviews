@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-export const albumSchema = z.object({
+const baseAlbumSchema = z.object({
   title: z
     .string()
     .min(2, "Title must be at least 2 characters")
@@ -16,4 +16,9 @@ export const albumSchema = z.object({
   artist: z.string().optional(),
 });
 
-export type AlbumInput = z.infer<typeof albumSchema>;
+export const createAlbumSchema = baseAlbumSchema;
+
+// For update operations - all fields optional
+export const updateAlbumSchema = baseAlbumSchema.partial();
+
+export type AlbumInput = z.infer<typeof baseAlbumSchema>;
