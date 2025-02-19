@@ -1,4 +1,3 @@
-import { Prisma } from "@prisma/client";
 import prisma from "../db/prisma.js";
 import {
   NotFoundError,
@@ -73,7 +72,7 @@ export const deleteGroupService = async (groupId: number, userId: number) => {
 export const updateGroupService = async (
   groupId: number,
   data: UpdateGroupInput,
-  userId: number
+  userId: number,
 ) => {
   const membership = await prisma.userGroup.findUnique({
     where: {
@@ -100,7 +99,7 @@ export const updateGroupService = async (
 export const sendGroupInviteService = async (
   groupId: number,
   email: string,
-  userId: number
+  userId: number,
 ) => {
   const group = await prisma.group.findUnique({
     where: { id: groupId },
@@ -176,7 +175,7 @@ export const getUserGroupsService = async (userId: number) => {
 export const getPaginatedGroupsService = async (
   userId: number,
   page: number,
-  limit: number
+  limit: number,
 ) => {
   const [total, groups] = await prisma.$transaction([
     prisma.userGroup.count({ where: { userId } }),

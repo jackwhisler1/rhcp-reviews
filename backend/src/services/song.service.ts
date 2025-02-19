@@ -71,7 +71,7 @@ export const createSongService = async (data: Prisma.SongCreateInput) => {
 
 export const updateSongService = async (
   songId: number,
-  data: Prisma.SongUpdateInput
+  data: Prisma.SongUpdateInput,
 ) => {
   return prisma.song.update({
     where: { id: songId },

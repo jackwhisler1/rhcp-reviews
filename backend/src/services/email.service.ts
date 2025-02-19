@@ -11,7 +11,7 @@ const transporter = nodemailer.createTransport({
 export const sendInvitationEmail = async (
   email: string,
   groupName: string,
-  inviteCode: string
+  inviteCode: string,
 ) => {
   const inviteLink = `${process.env.FRONTEND_URL}/join?code=${inviteCode}`;
 

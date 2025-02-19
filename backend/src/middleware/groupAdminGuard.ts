@@ -5,7 +5,7 @@ import { ForbiddenError } from "../errors/customErrors.js";
 export const groupAdminGuard = async (
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) => {
   const groupId = Number(req.params.groupId);
 

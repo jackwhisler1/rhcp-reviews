@@ -2,7 +2,12 @@ import { Prisma } from "@prisma/client";
 import prisma from "../db/prisma.js";
 
 export const createAlbumService = async (data: Prisma.AlbumCreateInput) => {
-  return prisma.album.create({ data });
+  return prisma.album.create({
+    data: {
+      ...data,
+      releaseDate: new Date(data.releaseDate),
+    },
+  });
 };
 
 export const getAlbumStatsService = async (albumId: number) => {
@@ -58,4 +63,25 @@ export const getPaginatedAlbumsService = async (params: {
       totalPages: Math.ceil(total / params.limit),
     },
   };
+};
+
+export const updateAlbumService = async (
+  id: number,
+  data: Prisma.AlbumUpdateInput
+) => {
+  return prisma.album.update({
+    where: { id },
+    data: {
+      ...data,
+      releaseDate: data.releaseDate
+        ? new Date(data.releaseDate as string)
+        : undefined,
+    },
+  });
+};
+
+export const deleteAlbumService = async (id: number) => {
+  return prisma.album.delete({
+    where: { id },
+  });
 };

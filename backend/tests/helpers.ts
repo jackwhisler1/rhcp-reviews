@@ -1,21 +1,22 @@
-import prisma from "../src/db/prisma";
-import { User } from "@prisma/client";
-import jwt from "jsonwebtoken";
+import prisma from "../src/db/prisma.js";
+import { startServer } from "../src/server.js";
 
-export const createTestUser = async (): Promise<{
-  user: User;
-  token: string;
-}> => {
-  const user = await prisma.user.create({
-    data: {
-      email: `test${Date.now()}@test.com`,
-      username: `testuser${Date.now()}`,
-      password: "Test123!",
-    },
-  });
+let testServer: ReturnType<typeof startServer> | null = null;
+let port: number = 0;
 
-  const token = jwt.sign({ id: user.id }, process.env.JWT_SECRET!);
-  return { user, token };
+export const setupTestEnvironment = () => {
+  if (!testServer) {
+    testServer = startServer();
+    port = (testServer.address() as any).port;
+  }
+  return { port };
+};
+
+export const stopTestServer = () => {
+  if (testServer) {
+    testServer.close();
+    testServer = null;
+  }
 };
 
 export const cleanupTestData = async () => {

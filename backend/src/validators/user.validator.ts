@@ -1,20 +1,13 @@
 import { z } from "zod";
 
-const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)[a-zA-Z\d]{8,}$/;
+const passwordRegex =
+  /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)[a-zA-Z\d!@#$%^&*()_+]{8,}$/;
 
 // Registration Schema
 export const registrationSchema = z.object({
   email: z.string().email("Invalid email format"),
-  username: z
-    .string()
-    .min(3, "Username must be at least 3 characters")
-    .max(20, "Username too long (max 20 characters)"),
-  password: z
-    .string()
-    .regex(
-      passwordRegex,
-      "Password must contain uppercase, lowercase and number"
-    ),
+  username: z.string().min(3).max(20),
+  password: z.string().min(8),
 });
 
 // Login Schema
@@ -32,10 +25,7 @@ export const updateUserSchema = z
       .min(3, "Username too short")
       .max(20, "Username too long")
       .optional(),
-    password: z
-      .string()
-      .regex(passwordRegex, "Invalid password format")
-      .optional(),
+    password: z.string().min(8).optional(),
     image: z.string().url("Invalid image URL").optional(),
   })
   .refine((data) => {

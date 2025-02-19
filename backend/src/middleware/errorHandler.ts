@@ -1,14 +1,18 @@
-import { Request, Response, NextFunction } from "express";
+import { Request, Response } from "express";
 import { z } from "zod";
 import { PrismaClientKnownRequestError } from "@prisma/client/runtime/library";
 
 export const errorHandler = (
   err: unknown,
   req: Request,
-  res: Response,
-  next: NextFunction
+  res: Response
 ): void => {
   console.error(err instanceof Error ? err.stack : String(err));
+
+  if (err instanceof Error) {
+    console.error("Error Stack:", err.stack);
+  }
+  console.error("Request Body:", req.body);
 
   // Handle Zod validation errors
   if (err instanceof z.ZodError) {

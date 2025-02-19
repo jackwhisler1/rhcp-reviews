@@ -20,7 +20,7 @@ router.patch(
   "/:groupId",
   authenticate,
   validate(groupSchema),
-  updateGroupController
+  updateGroupController,
 );
 router.post("/:groupId/invite", authenticate, sendInviteController);
 router.post("/join", authenticate, joinGroupController);

@@ -16,14 +16,14 @@ export const createGroupController = asyncHandler(
       userId: req.user!.id,
     });
     res.status(201).json(group);
-  }
+  },
 );
 
 export const deleteGroupController = asyncHandler(
   async (req: Request, res: Response) => {
     await deleteGroupService(Number(req.params.groupId), req.user!.id);
     res.sendStatus(204);
-  }
+  },
 );
 
 export const updateGroupController = asyncHandler(
@@ -31,10 +31,10 @@ export const updateGroupController = asyncHandler(
     const group = await updateGroupService(
       Number(req.params.groupId),
       req.body,
-      req.user!.id
+      req.user!.id,
     );
     res.json(group);
-  }
+  },
 );
 
 export const sendInviteController = asyncHandler(
@@ -42,22 +42,22 @@ export const sendInviteController = asyncHandler(
     const result = await sendGroupInviteService(
       Number(req.params.groupId),
       req.body.email,
-      req.user!.id
+      req.user!.id,
     );
     res.json(result);
-  }
+  },
 );
 
 export const joinGroupController = asyncHandler(
   async (req: Request, res: Response) => {
     const membership = await joinGroupService(req.body.code, req.user!.id);
     res.json(membership);
-  }
+  },
 );
 
 export const getUserGroupsController = asyncHandler(
   async (req: Request, res: Response) => {
     const groups = await getUserGroupsService(req.user!.id);
     res.json(groups);
-  }
+  },
 );

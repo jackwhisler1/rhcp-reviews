@@ -1,8 +1,10 @@
 import express from "express";
 import {
   createAlbumController,
+  deleteAlbumController,
   getAlbumStatsController,
   getAlbumsController,
+  updateAlbumController,
 } from "../controllers/album.controller.js";
 import { authenticate } from "../middleware/auth.js";
 import { validate } from "../middleware/validate.js";
@@ -13,5 +15,7 @@ const router = express.Router();
 router.post("/", authenticate, validate(albumSchema), createAlbumController);
 router.get("/stats/:albumId", getAlbumStatsController);
 router.get("/", getAlbumsController);
+router.put("/:id", authenticate, validate(albumSchema), updateAlbumController);
+router.delete("/:id", authenticate, deleteAlbumController);
 
 export default router;

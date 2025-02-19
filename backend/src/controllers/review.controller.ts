@@ -12,7 +12,7 @@ export const createReviewController = asyncHandler(
       userId: req.user!.id,
     });
     res.status(201).json(review);
-  }
+  },
 );
 
 export const getReviewsController = asyncHandler(
@@ -22,5 +22,5 @@ export const getReviewsController = asyncHandler(
       userId: req.user?.id,
     });
     res.json(result);
-  }
+  },
 );

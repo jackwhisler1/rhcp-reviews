@@ -1,7 +1,5 @@
 import { z } from "zod";
 
-const currentYear = new Date().getFullYear();
-
 export const albumSchema = z.object({
   title: z
     .string()
@@ -14,7 +12,7 @@ export const albumSchema = z.object({
   artworkUrl: z
     .string()
     .url("Invalid artwork URL")
-    .regex(/\.(jpeg|jpg|png|webp)$/i, "Invalid image format"),
+    .regex(/\.(jpeg|jpg|png|webp|url)$/i, "Invalid image format"),
   artist: z.string().optional(),
 });
 

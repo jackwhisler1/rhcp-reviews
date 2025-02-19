@@ -14,8 +14,15 @@ const saltRounds = 10;
 
 export const registerUserController = asyncHandler(
   async (req: Request, res: Response) => {
-    const user = await registerUserService(req.body);
-    res.status(201).json(user);
+    try {
+      console.log("Received registration data:", req.body);
+      const user = await registerUserService(req.body);
+      res.status(201).json(user);
+    } catch (error) {
+      console.error("Validation Error:", error);
+      const typedError = error as any;
+      res.status(422).json({ error: typedError.errors ?? "Invalid request" });
+    }
   }
 );
 

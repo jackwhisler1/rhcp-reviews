@@ -6,7 +6,7 @@ import { AuthenticationError } from "../errors/customErrors.js";
 export const authenticate = async (
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) => {
   const token = req.header("Authorization")?.replace("Bearer ", "");
 
@@ -21,5 +21,6 @@ export const authenticate = async (
     next();
   } catch (err) {
     next(new AuthenticationError());
+    console.log(err);
   }
 };

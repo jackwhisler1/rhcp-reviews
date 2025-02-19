@@ -114,7 +114,7 @@ export const updateUserService = async (
     email: string;
     password: string;
     image: string;
-  }>
+  }>,
 ) => {
   if (data.password) {
     data.password = await bcrypt.hash(data.password, saltRounds);

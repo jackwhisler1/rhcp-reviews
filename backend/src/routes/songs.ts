@@ -19,7 +19,7 @@ router.patch(
   "/:songId",
   authenticate,
   validate(songSchema),
-  updateSongController
+  updateSongController,
 );
 router.delete("/:songId", authenticate, deleteSongController);
 

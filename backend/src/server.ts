@@ -18,17 +18,28 @@ import reviewRoutes from "./routes/reviews.js";
 import { errorHandler } from "./middleware/errorHandler.js";
 import { authenticate } from "./middleware/auth.js";
 import asyncRouteHandler from "./middleware/asyncRouteHandler.js";
+import { createServer } from "http";
 
 // Config
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 dotenv.config();
+
 // Express setup
 export const app = express();
-const PORT = process.env.PORT || 5000;
-if (!process.env.JWT_SECRET) {
-  throw new Error("JWT_SECRET environment variable is not defined");
-}
+export const server = createServer(app);
+let activePort: number;
+
+export const startServer = () => {
+  const instance = server.listen(0); // Let OS choose port
+  activePort = (instance.address() as any).port;
+  console.log(`Server running on port ${activePort}`);
+  return instance;
+};
+
+export const stopServer = () => {
+  server.close();
+};
 
 // Middleware chain
 app.use(cors());
@@ -67,10 +78,3 @@ app.use("/api/reviews", authenticate, reviewRoutes);
 
 // Error handler
 app.use(errorHandler);
-// Server start
-app.listen(PORT, () => {
-  console.log(
-    `Server running in ${process.env.NODE_ENV || "development"} mode`
-  );
-  console.log(`Listening on http://localhost:${PORT}`);
-});
