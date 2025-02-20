@@ -1,53 +1,44 @@
-import { Request, Response } from "express";
 import { z } from "zod";
 import { PrismaClientKnownRequestError } from "@prisma/client/runtime/library";
+import { Request, Response, NextFunction } from "express";
 
 export const errorHandler = (
-  err: unknown,
+  err: Error,
   req: Request,
-  res: Response
-): void => {
-  console.error("Error:", {
-    message: err instanceof Error ? err.message : "Unknown error",
-    stack: err instanceof Error ? err.stack : undefined,
-    body: req.body,
-    method: req.method,
-    url: req.originalUrl,
-  });
-
-  if (err instanceof Error) {
-    console.error("Error Stack:", err.stack);
+  res: Response,
+  next: NextFunction
+) => {
+  // Check if response is still writable
+  if (res.headersSent || typeof res.status !== "function") {
+    return next(err);
   }
-  console.error("Request Body:", req.body);
+
+  // Handle static file errors first
+  if (req.path.startsWith("/images")) {
+    return res.status(404).send("Image not found");
+  }
 
   // Handle Zod validation errors
   if (err instanceof z.ZodError) {
-    res.status(400).json({
+    return res?.status(400).json({
       error: "Validation Error",
       details: err.errors,
     });
-    return;
   }
 
   // Handle Prisma errors
   if (err instanceof PrismaClientKnownRequestError) {
-    res.status(400).json({
+    return res?.status(400).json({
       error: "Database Error",
       code: err.code,
     });
-    return;
   }
 
-  // Handle custom errors
-  if (err instanceof Error) {
-    res.status(500).json({
-      error: err.message,
-    });
-    return;
-  }
-
-  // Fallback for unknown errors
-  res.status(500).json({
-    error: "Internal Server Error",
+  // Handle other errors
+  res?.status(500).json({
+    error:
+      process.env.NODE_ENV === "production"
+        ? "Internal Server Error"
+        : err.message,
   });
 };

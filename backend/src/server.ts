@@ -1,4 +1,4 @@
-import express from "express";
+import express, { Request, Response, NextFunction } from "express";
 import cors from "cors";
 import dotenv from "dotenv";
 import path from "path";
@@ -31,11 +31,13 @@ export const server = createServer(app);
 let activePort: number;
 
 export const startServer = () => {
-  const instance = server.listen(0); // Let OS choose port
+  const instance = server.listen(5000); // Let OS choose port
   activePort = (instance.address() as any).port;
   console.log(`Server running on port ${activePort}`);
   return instance;
 };
+
+startServer();
 
 export const stopServer = () => {
   server.close();
@@ -56,7 +58,17 @@ const apiLimiter = rateLimit({
 app.use("/api/", apiLimiter);
 
 // Static files
-app.use("/images", express.static(path.join(__dirname, "./images")));
+app.use(
+  "/src/images", // Match the URL path you're using
+  express.static(path.join(__dirname, "../src/images")),
+  (err: any, req: Request, res: Response, next: NextFunction) => {
+    if (err) {
+      res.status(404).send("Image not found");
+    } else {
+      next();
+    }
+  }
+);
 
 const upload = multer({ dest: "uploads/" });
 app.post(
@@ -77,4 +89,6 @@ app.use("/api/groups", authenticate, groupsRouter);
 app.use("/api/reviews", authenticate, reviewRoutes);
 
 // Error handler
-app.use(errorHandler);
+app.use((err: Error, req: Request, res: Response, next: NextFunction) => {
+  errorHandler(err, req, res, next);
+});

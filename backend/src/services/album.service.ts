@@ -40,9 +40,7 @@ export const getPaginatedAlbumsService = async (params: {
   search?: string;
 }) => {
   const where: Prisma.AlbumWhereInput = params.search
-    ? {
-        OR: [{ title: { contains: params.search, mode: "insensitive" } }],
-      }
+    ? { OR: [{ title: { contains: params.search, mode: "insensitive" } }] }
     : {};
 
   const [total, albums] = await prisma.$transaction([
@@ -52,6 +50,13 @@ export const getPaginatedAlbumsService = async (params: {
       skip: (params.page - 1) * params.limit,
       take: params.limit,
       orderBy: { releaseDate: "desc" },
+      include: {
+        songs: {
+          include: {
+            reviews: true,
+          },
+        },
+      },
     }),
   ]);
 
