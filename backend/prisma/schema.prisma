@@ -70,4 +70,8 @@ model Review {
   createdAt DateTime @default(now())
   group     Group?   @relation(fields: [groupId], references: [id])
   groupId   Int?
+
+  @@index([songId])
+  @@index([groupId])
+  @@index([userId])
 }

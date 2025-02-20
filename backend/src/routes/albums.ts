@@ -2,7 +2,7 @@ import express from "express";
 import {
   createAlbumController,
   deleteAlbumController,
-  getAlbumStatsController,
+  getAlbumSongStatsController,
   getAlbumsController,
   updateAlbumController,
 } from "../controllers/album.controller.js";
@@ -21,14 +21,18 @@ router.post(
   validate(createAlbumSchema),
   createAlbumController
 );
-router.get("/stats/:albumId", getAlbumStatsController);
+
+router.get("/:albumId/songs/stats", getAlbumSongStatsController);
+
 router.get("/", getAlbumsController);
+
 router.put(
   "/:id",
   authenticate,
   validate(updateAlbumSchema),
   updateAlbumController
 );
+
 router.delete("/:id", authenticate, deleteAlbumController);
 
 export default router;
