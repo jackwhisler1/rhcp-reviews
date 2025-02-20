@@ -25,7 +25,7 @@ export const getAlbumsController = asyncHandler(
   async (req: Request, res: Response) => {
     const result = await getPaginatedAlbumsService({
       page: Number(req.query.page) || 1,
-      limit: Number(req.query.limit) || 10,
+      limit: Number(req.query.limit) || 25,
       search: req.query.search?.toString(),
     });
     res.json(result);
