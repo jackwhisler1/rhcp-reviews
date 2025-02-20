@@ -1,40 +1,20 @@
-import React, { useState, useEffect } from "react";
-import BaseContainer from "../components/Container";
-import AlbumCarousel from "../components/AlbumCarousel";
-import SongStats from "../components/SongStats";
-import Footer from "../components/Footer"; // Create a simple Footer component
+import { useState } from "react";
+import BaseContainer from "../components/common/Container";
+import AlbumCarousel from "../components/AlbumCarousel/AlbumCarousel";
+import SongStats from "../components/SongStats/SongStats";
+import Footer from "../components/common/Footer";
+import LoadingSpinner from "../components/common/LoadingSpinner";
+import { useAuth } from "../context/AuthContext";
+import { useUserGroups } from ".././hooks/useUserGroups";
 
-const Home: React.FC = () => {
+const HomePage = () => {
+  const { user, loading: authLoading, logout } = useAuth();
   const [selectedAlbumId, setSelectedAlbumId] = useState<number | null>(null);
-  const [songStats, setSongStats] = useState<any[]>([]);
-  const [selectedGroup, setSelectedGroup] = useState<string>("all");
-  const [showUserOnly, setShowUserOnly] = useState(false);
-
-  useEffect(() => {
-    if (selectedAlbumId) {
-      const fetchSongStats = async () => {
-        try {
-          const params = new URLSearchParams();
-          if (selectedGroup !== "all") params.append("groupId", selectedGroup);
-          if (showUserOnly) params.append("userFilter", "true");
-
-          const response = await fetch(
-            `http://localhost:5000/api/albums/${selectedAlbumId}/songs/stats?${params}`
-          );
-          const data = await response.json();
-          setSongStats(data);
-        } catch (error) {
-          console.error("Error fetching song stats:", error);
-        }
-      };
-      fetchSongStats();
-    }
-  }, [selectedAlbumId, selectedGroup, showUserOnly]);
-
-  const handleFilterChange = (group: string, userOnly: boolean) => {
-    setSelectedGroup(group);
-    setShowUserOnly(userOnly);
-  };
+  const {
+    groups,
+    loading: groupsLoading,
+    error: groupsError,
+  } = useUserGroups(user?.id);
 
   return (
     <BaseContainer>
@@ -44,14 +24,20 @@ const Home: React.FC = () => {
           selectedAlbumId={selectedAlbumId}
         />
 
-        {selectedAlbumId && (
-          <SongStats
-            songStats={songStats}
-            selectedAlbumId={selectedAlbumId}
-            selectedGroup={selectedGroup}
-            showUserOnly={showUserOnly}
-            onFilterChange={handleFilterChange}
-          />
+        {groupsLoading ? (
+          <LoadingSpinner />
+        ) : groupsError ? (
+          <div className="text-red-600">
+            Error loading groups: {groupsError}
+          </div>
+        ) : (
+          selectedAlbumId && (
+            <SongStats
+              albumId={selectedAlbumId}
+              userId={user?.id?.toString() || ""}
+              groups={groups || []}
+            />
+          )
         )}
 
         <Footer />
@@ -60,4 +46,4 @@ const Home: React.FC = () => {
   );
 };
 
-export default Home;
+export default HomePage;

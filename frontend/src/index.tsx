@@ -2,6 +2,7 @@ import React from "react";
 import ReactDOM from "react-dom/client";
 import App from "./App";
 import "./styling/Styles.css";
+import "./utils/chartConfig";
 
 const rootElement = document.getElementById("root");
 
