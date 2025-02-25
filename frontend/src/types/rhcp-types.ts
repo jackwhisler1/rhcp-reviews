@@ -28,13 +28,6 @@ export interface Group {
   createdAt: Date;
 }
 
-export interface User {
-  id: number;
-  username: string;
-  email: string;
-  image?: string;
-}
-
 export interface GroupMember {
   id: number;
   username: string;
