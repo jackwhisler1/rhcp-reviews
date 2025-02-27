@@ -6,6 +6,7 @@ import Footer from "../components/common/Footer";
 import LoadingSpinner from "../components/common/LoadingSpinner";
 import { useAuth } from "../context/AuthContext";
 import { useUserGroups } from ".././hooks/useUserGroups";
+import Navbar from "../components/common/Navbar";
 
 const HomePage = () => {
   const { user, loading: authLoading, logout } = useAuth();
@@ -18,6 +19,7 @@ const HomePage = () => {
 
   return (
     <BaseContainer>
+      <Navbar />
       <div className="w-full max-w-4xl mx-auto p-4">
         <AlbumCarousel
           onAlbumSelect={setSelectedAlbumId}

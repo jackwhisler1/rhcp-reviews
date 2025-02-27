@@ -84,7 +84,7 @@ app.post(
 // Routes
 app.use("/api/albums", albumsRouter);
 app.use("/api/songs", songsRouter);
-app.use("/api/users", usersRouter);
+app.use("/api/auth", usersRouter);
 app.use("/api/groups", authenticate, groupsRouter);
 app.use("/api/reviews", authenticate, reviewRoutes);
 
