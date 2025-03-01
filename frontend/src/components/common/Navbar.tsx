@@ -1,14 +1,16 @@
 import { Link } from "react-router-dom";
 import { getCurrentUser } from "../../services/authService";
+import { ReactComponent as Logo } from "../../assets/rht-logo.svg";
 
 const Navbar: React.FC = () => {
   const currentUser = getCurrentUser();
 
   return (
     <div className="max-w-4xl mx-auto mt-8 text-center">
-      <h1 className="text-3xl font-bold text-red-700 mb-4">
-        Welcome to the Music Review App
-      </h1>
+      {/* Logo centered */}
+      <div className="flex justify-center mb-4">
+        <Logo width={220} height={120} className="fill-current" />
+      </div>
 
       <p className="text-lg mb-6">
         Share your thoughts on your favorite songs and discover new music
@@ -56,31 +58,8 @@ const Navbar: React.FC = () => {
           </div>
         )}
       </div>
-
-      <div className="mt-12 p-6 bg-white rounded-lg shadow-md">
-        <h2 className="text-2xl font-bold text-red-700 mb-4">How It Works</h2>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 text-left">
-          <div>
-            <h3 className="text-lg font-semibold mb-2">1. Create an Account</h3>
-            <p>Sign up for free and join our community of music enthusiasts.</p>
-          </div>
-          <div>
-            <h3 className="text-lg font-semibold mb-2">
-              2. Share Your Reviews
-            </h3>
-            <p>Rate and review songs you love, hate, or feel neutral about.</p>
-          </div>
-          <div>
-            <h3 className="text-lg font-semibold mb-2">
-              3. Discover New Music
-            </h3>
-            <p>
-              Browse reviews from other users to find your next favorite song.
-            </p>
-          </div>
-        </div>
-      </div>
     </div>
   );
 };
+
 export default Navbar;

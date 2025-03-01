@@ -4,7 +4,7 @@ import { ReactNode } from "react";
 
 const BaseContainer = ({ children }: { children: ReactNode }) => {
   return (
-    <div className="container mx-auto px-8 py-11   bg-gray-200 min-h-screen flex items-center justify-center">
+    <div className="mx-auto px-8 py-11 bg-night min-h-screen min-w-max flex items-center justify-center">
       {children}
     </div>
   );
