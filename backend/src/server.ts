@@ -19,6 +19,7 @@ import { errorHandler } from "./middleware/errorHandler.js";
 import { authenticate } from "./middleware/auth.js";
 import asyncRouteHandler from "./middleware/asyncRouteHandler.js";
 import { createServer } from "http";
+import helmet from "helmet";
 
 // Config
 const __filename = fileURLToPath(import.meta.url);
@@ -80,6 +81,28 @@ app.post(
     res.json({ url: `/images/${req.file?.filename}` });
   })
 );
+
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 5,
+  message: "Too many login attempts",
+});
+app.use("/api/auth/login", authLimiter);
+
+// Enable the Helmet middleware for added security
+app.use(helmet());
+app.use(
+  helmet.hsts({
+    maxAge: 31536000, // 1 year
+    includeSubDomains: true,
+    preload: true,
+  })
+);
+app.use((req, res, next) => {
+  res.setHeader("X-Content-Type-Options", "nosniff");
+  res.setHeader("X-Frame-Options", "DENY");
+  next();
+});
 
 // Routes
 app.use("/api/albums", albumsRouter);

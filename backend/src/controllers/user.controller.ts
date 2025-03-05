@@ -4,11 +4,13 @@ import {
   loginUserService,
   getCurrentUserService,
   deleteUserService,
+  refreshTokenService,
 } from "../services/user.service.js";
 import asyncHandler from "../middleware/asyncRouteHandler.js";
 import { UpdateUserInput } from "../validators/user.validator.js";
 import prisma from "../db/prisma.js";
 import bcrypt from "bcryptjs";
+import { AuthenticationError, ValidationError } from "@/errors/customErrors.js";
 
 const saltRounds = 10;
 
@@ -28,11 +30,11 @@ export const registerUserController = asyncHandler(
 
 export const loginUserController = asyncHandler(
   async (req: Request, res: Response) => {
-    const { token, user } = await loginUserService(
+    const { token, refreshToken, user } = await loginUserService(
       req.body.email,
       req.body.password
     );
-    res.json({ token, user });
+    res.json({ token, refreshToken, user });
   }
 );
 
@@ -40,6 +42,29 @@ export const getCurrentUserController = asyncHandler(
   async (req: Request, res: Response) => {
     const user = await getCurrentUserService(req.user!.id);
     res.json(user);
+  }
+);
+
+export const refreshTokenController = asyncHandler(
+  async (req: Request, res: Response) => {
+    const { refreshToken } = req.body;
+
+    if (!refreshToken) {
+      throw new ValidationError("Refresh token required", {
+        refreshToken: "Missing refresh token",
+      });
+    }
+
+    try {
+      const tokens = await refreshTokenService(refreshToken);
+      res.json(tokens);
+    } catch (error) {
+      if (error instanceof AuthenticationError) {
+        res.status(401).json({ error: error.message });
+      } else {
+        res.status(500).json({ error: "Internal server error" });
+      }
+    }
   }
 );
 

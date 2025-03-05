@@ -66,12 +66,24 @@ export const loginUserService = async (email: string, password: string) => {
     throw new AuthenticationError("Invalid credentials");
   }
 
-  const token = jwt.sign({ id: user.id }, process.env.JWT_SECRET!, {
+  if (!process.env.JWT_SECRET) {
+    throw new Error("JWT_SECRET environment variable missing");
+  }
+
+  const accessToken = jwt.sign({ id: user.id }, process.env.JWT_SECRET, {
+    expiresIn: "15m",
+  });
+  const refreshToken = jwt.sign({ id: user.id }, process.env.JWT_SECRET, {
     expiresIn: "7d",
   });
 
+  await prisma.user.update({
+    where: { id: user.id },
+    data: { refreshToken },
+  });
   return {
-    token,
+    token: accessToken,
+    refreshToken,
     user: {
       id: user.id,
       email: user.email,
@@ -114,7 +126,7 @@ export const updateUserService = async (
     email: string;
     password: string;
     image: string;
-  }>,
+  }>
 ) => {
   if (data.password) {
     data.password = await bcrypt.hash(data.password, saltRounds);
@@ -132,6 +144,54 @@ export const updateUserService = async (
   });
 };
 
+export const refreshTokenService = async (refreshToken: string) => {
+  if (!process.env.JWT_SECRET) {
+    throw new Error("JWT_SECRET environment variable missing");
+  }
+
+  try {
+    const decoded = jwt.verify(refreshToken, process.env.JWT_SECRET) as {
+      id: number;
+    };
+
+    const user = await prisma.user.findUnique({
+      where: { id: decoded.id },
+      select: { id: true, refreshToken: true },
+    });
+
+    if (!user || user.refreshToken !== refreshToken) {
+      throw new AuthenticationError("Invalid refresh token");
+    }
+
+    // Generate new tokens with fresh expiration
+    const newAccessToken = jwt.sign({ id: user.id }, process.env.JWT_SECRET, {
+      expiresIn: "15m",
+    });
+
+    const newRefreshToken = jwt.sign({ id: user.id }, process.env.JWT_SECRET, {
+      expiresIn: "7d",
+    });
+
+    // Update refresh token in database
+    await prisma.user.update({
+      where: { id: user.id },
+      data: { refreshToken: newRefreshToken },
+    });
+
+    return {
+      accessToken: newAccessToken,
+      refreshToken: newRefreshToken,
+    };
+  } catch (error) {
+    if (error instanceof jwt.TokenExpiredError) {
+      throw new AuthenticationError("Refresh token expired");
+    }
+    if (error instanceof jwt.JsonWebTokenError) {
+      throw new AuthenticationError("Invalid refresh token");
+    }
+    throw new AuthenticationError("Token refresh failed");
+  }
+};
 export const deleteUserService = async (userId: number) => {
   return prisma.user.delete({
     where: { id: userId },

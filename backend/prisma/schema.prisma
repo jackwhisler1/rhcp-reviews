@@ -26,13 +26,14 @@ model Song {
 }
 
 model User {
-  id       Int         @id @default(autoincrement())
-  username String      @unique
-  email    String      @unique
-  password String
-  image    String?
-  groups   UserGroup[]
-  reviews  Review[]
+  id           Int         @id @default(autoincrement())
+  username     String      @unique
+  email        String      @unique
+  password     String
+  image        String?
+  refreshToken String?     @db.Text
+  groups       UserGroup[]
+  reviews      Review[]
 }
 
 model Group {

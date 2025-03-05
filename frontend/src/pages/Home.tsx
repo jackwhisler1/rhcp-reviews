@@ -18,35 +18,38 @@ const HomePage = () => {
   } = useUserGroups(user?.id);
 
   return (
-    <BaseContainer>
-      <div className="flex flex-col bg-white-smoke items-center justify-center px-4">
-        <Navbar />
-        <div className="w-full max-w-4xl mx-auto p-4 bg-">
-          <AlbumCarousel
-            onAlbumSelect={setSelectedAlbumId}
-            selectedAlbumId={selectedAlbumId}
-          />
+    <>
+      <BaseContainer>
+        <div className="flex flex-col bg-white-smoke items-center justify-center px-4">
+          {" "}
+          <Navbar />
+          <div className="w-full max-w-4xl mx-auto p-4 bg-">
+            <AlbumCarousel
+              onAlbumSelect={setSelectedAlbumId}
+              selectedAlbumId={selectedAlbumId}
+            />
 
-          {groupsLoading ? (
-            <LoadingSpinner />
-          ) : groupsError ? (
-            <div className="text-red-600">
-              Error loading groups: {groupsError}
-            </div>
-          ) : (
-            selectedAlbumId && (
-              <SongStats
-                albumId={selectedAlbumId}
-                userId={user?.id?.toString() || ""}
-                groups={groups || []}
-              />
-            )
-          )}
+            {groupsLoading ? (
+              <LoadingSpinner />
+            ) : groupsError ? (
+              <div className="text-red-600">
+                Error loading groups: {groupsError}
+              </div>
+            ) : (
+              selectedAlbumId && (
+                <SongStats
+                  albumId={selectedAlbumId}
+                  userId={user?.id?.toString() || ""}
+                  groups={groups || []}
+                />
+              )
+            )}
 
-          <Footer />
+            <Footer />
+          </div>
         </div>
-      </div>
-    </BaseContainer>
+      </BaseContainer>
+    </>
   );
 };
 

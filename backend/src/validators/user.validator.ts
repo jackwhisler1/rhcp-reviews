@@ -33,6 +33,13 @@ export const updateUserSchema = z
     return Object.keys(data).length > 0;
   }, "At least one field must be provided");
 
+// Refresh Token Schema
+export const refreshTokenSchema = z.object({
+  body: z.object({
+    refreshToken: z.string().min(1, "Refresh token is required"),
+  }),
+});
+
 export type RegistrationInput = z.infer<typeof registrationSchema>;
 export type LoginInput = z.infer<typeof loginSchema>;
 export type UpdateUserInput = z.infer<typeof updateUserSchema>;

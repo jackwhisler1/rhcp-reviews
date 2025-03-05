@@ -26,7 +26,7 @@ const Footer: React.FC = () => {
           </div>
         </div>
       </div>
-      <p>© 2023 RHCP Reviews. All rights reserved.</p>
+      <p className="mt-5">© 2023 RHCP Reviews. All rights reserved.</p>
       <p>Data from Red Hot Chili Peppers discography</p>
     </footer>
   );

@@ -30,3 +30,13 @@ export interface AuthFormProps {
   isLogin?: boolean;
   errors?: RegistrationError;
 }
+
+export interface AuthResponse {
+  user: {
+    id: string;
+    email: string;
+    username: string;
+  };
+  token: string;
+  refreshToken?: string;
+}
