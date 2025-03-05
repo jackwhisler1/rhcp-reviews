@@ -63,6 +63,7 @@ const UserDropdown = () => {
                 to="/"
                 onClick={() => {
                   logout();
+                  window.location.reload();
                 }}
                 className={`${
                   active ? "bg-gray-100 text-gray-900" : "text-gray-700"
