@@ -33,9 +33,9 @@ const AlbumCarousel: React.FC<AlbumCarouselProps> = ({
 
   return (
     <div className="mb-8">
-      <h2 className="text-xl font-bold text-red-700 mb-4">RHCP Albums</h2>
+      <h2 className="text-xl font-bold mb-4">RHCP Albums</h2>
       <div className="flex gap-4 overflow-x-auto pb-4">
-        {albums.map((album) => (
+        {albums?.map((album) => (
           <div
             key={album.id}
             className={`flex-shrink-0 w-32 cursor-pointer transition-transform ${
