@@ -38,9 +38,7 @@ export const login = async (email: string, password: string) => {
 };
 
 export const logout = () => {
-  // Add optional API call to invalidate token on backend
   sessionStorage.removeItem("rht-user");
-  window.location.href = "/login"; // Force clean client-side state
 };
 
 // Secure storage with sessionStorage and encryption

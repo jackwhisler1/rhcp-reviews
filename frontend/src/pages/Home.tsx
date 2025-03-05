@@ -20,10 +20,10 @@ const HomePage = () => {
   return (
     <>
       <BaseContainer>
-        <div className="flex flex-col bg-white-smoke items-center justify-center px-4">
+        <div className="flex flex-col bg-white items-center justify-center px-4">
           {" "}
           <Navbar />
-          <div className="w-full max-w-4xl mx-auto p-4 bg-">
+          <div className="w-full max-w-4xl mx-auto p-4 bg-white">
             <AlbumCarousel
               onAlbumSelect={setSelectedAlbumId}
               selectedAlbumId={selectedAlbumId}

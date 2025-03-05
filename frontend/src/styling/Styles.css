@@ -82,7 +82,7 @@ a:hover {
 
 /* Buttons */
 button {
-  background-color: #a4161a; /* Cornell Red */
+  background-color: #d3d3d3;
   color: #f5f3f4; /* White Smoke */
   padding: 10px 20px;
   font-size: 1rem;
@@ -93,7 +93,7 @@ button {
 }
 
 button:hover {
-  background-color: #660708; /* Blood Red */
+  background-color: #b1a7a6; /* Blood Red */
 }
 
 /* Secondary Button */

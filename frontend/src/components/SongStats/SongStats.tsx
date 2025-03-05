@@ -37,7 +37,7 @@ const SongStats = ({ albumId, userId, groups }: SongStatsProps) => {
   if (error) return <ErrorMessage message={error} />;
 
   return (
-    <div className="song-stats-container">
+    <div className="song-stats-container my-4 p-6 bg-white rounded-lg shadow-md">
       <Filters
         groups={groups}
         members={members}

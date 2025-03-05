@@ -32,7 +32,7 @@ const AlbumCarousel: React.FC<AlbumCarouselProps> = ({
   }, []);
 
   return (
-    <div className="mb-8">
+    <div className="mb-8 p-6 bg-white rounded-lg shadow-md">
       <h2 className="text-xl font-bold mb-4">RHCP Albums</h2>
       <div className="flex gap-4 overflow-x-auto pb-4">
         {albums?.map((album) => (
