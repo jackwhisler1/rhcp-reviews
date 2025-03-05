@@ -32,15 +32,15 @@ const AlbumCarousel: React.FC<AlbumCarouselProps> = ({
   }, []);
 
   return (
-    <div className="mb-8 p-6 bg-white rounded-lg shadow-md">
+    <div className="mb-8 p-6 bg-white rounded-lg shadow-md select-none">
       <h2 className="text-xl font-bold mb-4">RHCP Albums</h2>
       <div className="flex gap-4 overflow-x-auto pb-4">
         {albums?.map((album) => (
           <div
             key={album.id}
-            className={`flex-shrink-0 w-32 cursor-pointer transition-transform ${
+            className={`flex-shrink-0 w-32 cursor-pointer transition-transform m-1 ${
               selectedAlbumId === album.id
-                ? "ring-2 ring-red-500 rounded-lg"
+                ? "border-b-2 border-imperial-red"
                 : ""
             }`}
             onClick={() => onAlbumSelect(album.id)}
