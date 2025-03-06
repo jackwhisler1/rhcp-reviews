@@ -10,11 +10,12 @@ import { useGroupMembers } from "../../hooks/useGroupMembers";
 
 interface SongStatsProps {
   albumId: number;
+  albumTitle: string;
   userId: string;
   groups: Group[];
 }
 
-const SongStats = ({ albumId, userId, groups }: SongStatsProps) => {
+const SongStats = ({ albumId, albumTitle, userId, groups }: SongStatsProps) => {
   const [filters, setFilters] = useState<FiltersState>({
     groupId: "all",
     userId: "all",
@@ -45,7 +46,11 @@ const SongStats = ({ albumId, userId, groups }: SongStatsProps) => {
         onFilterChange={handleFilterChange}
       />
 
-      <ChartComponent songStats={stats} filters={filters} />
+      <ChartComponent
+        albumTitle={albumTitle}
+        songStats={stats}
+        filters={filters}
+      />
 
       <ReviewsTable
         songStats={stats}

@@ -8,7 +8,7 @@ interface Album {
 }
 
 interface AlbumCarouselProps {
-  onAlbumSelect: (albumId: number) => void;
+  onAlbumSelect: (album: { id: number; title: string }) => void;
   selectedAlbumId: number | null;
 }
 
@@ -43,7 +43,7 @@ const AlbumCarousel: React.FC<AlbumCarouselProps> = ({
                 ? "border-b-2 border-imperial-red"
                 : ""
             }`}
-            onClick={() => onAlbumSelect(album.id)}
+            onClick={() => onAlbumSelect({ id: album.id, title: album.title })}
           >
             <img
               src={album.artworkUrl}

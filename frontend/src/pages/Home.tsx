@@ -11,6 +11,13 @@ import Navbar from "../components/common/Navbar";
 const HomePage = () => {
   const { user, loading: authLoading, logout } = useAuth();
   const [selectedAlbumId, setSelectedAlbumId] = useState<number | null>(null);
+  const [selectedAlbum, setSelectedAlbum] = useState<{
+    id: number | null;
+    title: string;
+  }>({
+    id: null,
+    title: "",
+  });
   const {
     groups,
     loading: groupsLoading,
@@ -25,8 +32,8 @@ const HomePage = () => {
           <Navbar />
           <div className="w-full max-w-4xl mx-auto p-4 bg-white">
             <AlbumCarousel
-              onAlbumSelect={setSelectedAlbumId}
-              selectedAlbumId={selectedAlbumId}
+              onAlbumSelect={(album) => setSelectedAlbum(album)}
+              selectedAlbumId={selectedAlbum.id}
             />
 
             {groupsLoading ? (
@@ -36,9 +43,10 @@ const HomePage = () => {
                 Error loading groups: {groupsError}
               </div>
             ) : (
-              selectedAlbumId && (
+              selectedAlbum.id && (
                 <SongStats
-                  albumId={selectedAlbumId}
+                  albumId={selectedAlbum.id}
+                  albumTitle={selectedAlbum.title}
                   userId={user?.id?.toString() || ""}
                   groups={groups || []}
                 />
