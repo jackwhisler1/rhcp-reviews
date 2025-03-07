@@ -31,7 +31,7 @@ interface ParsedFilters {
 }
 
 export const createReviewService = async (data: {
-  content: string;
+  content?: string;
   rating: number;
   songId: number;
   groupId?: number;
@@ -41,12 +41,6 @@ export const createReviewService = async (data: {
   if (data.rating < 0 || data.rating > 10) {
     throw new ValidationError("Rating must be between 0 and 10", {
       rating: "Invalid rating value",
-    });
-  }
-
-  if (!data.content || data.content.trim().length < 10) {
-    throw new ValidationError("Review content too short (min 10 characters)", {
-      content: "Content length validation failed",
     });
   }
 

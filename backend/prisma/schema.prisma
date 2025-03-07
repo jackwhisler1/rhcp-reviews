@@ -62,7 +62,7 @@ model UserGroup {
 
 model Review {
   id        Int      @id @default(autoincrement())
-  content   String
+  content   String?
   rating    Float
   song      Song     @relation(fields: [songId], references: [id])
   songId    Int

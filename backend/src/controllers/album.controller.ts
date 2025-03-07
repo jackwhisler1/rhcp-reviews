@@ -7,7 +7,7 @@ import {
   updateAlbumService,
 } from "../services/album.service.js";
 import asyncHandler from "../middleware/asyncRouteHandler.js";
-import prisma from "@/db/prisma.js";
+import prisma from "../db/prisma.js";
 
 export const createAlbumController = asyncHandler(
   async (req: Request, res: Response) => {

@@ -1,47 +1,22 @@
 import request from "supertest";
 import { app } from "../src/server.js";
-import { setupTestEnvironment, stopTestServer } from "./helpers.js";
+import { getTestUserToken } from "./helpers/auth";
+import { setupTestData, cleanupTestData } from "./helpers/data";
 import jwt from "jsonwebtoken";
-
-// Setup test environment once at the root level
-setupTestEnvironment();
 
 describe("Album Operations", () => {
   let authToken: string;
-  let userId: number;
+  let userId: string;
 
   beforeAll(async () => {
-    // Register user
-    const registerRes = await request(app).post(`/api/users/register`).send({
-      username: "testuser2",
-      email: "test1@example.com",
-      password: "Test123!",
-    });
-    console.log(
-      "Register Response:",
-      registerRes.status,
-      JSON.stringify(registerRes.body, null, 2)
-    );
-
-    expect(registerRes.status).toBe(201);
-    userId = registerRes.body.id;
-
-    // Login to get token
-    const loginRes = await request(app).post(`/api/users/login`).send({
-      email: "test1@example.com",
-      password: "Test123!",
-    });
-    console.log("Login Response:", loginRes.status, loginRes.body);
-
-    expect(loginRes.status).toBe(200);
-    authToken = loginRes.body.token;
-
-    // Verify JWT token
-    jwt.verify(authToken, process.env.JWT_SECRET as string);
+    await setupTestData();
+    const auth = await getTestUserToken();
+    authToken = auth.token;
+    userId = auth.userId;
   });
 
-  afterAll(() => {
-    stopTestServer();
+  afterAll(async () => {
+    await cleanupTestData();
   });
 
   it("should create/read/update/delete album", async () => {
@@ -51,7 +26,7 @@ describe("Album Operations", () => {
       .set("Authorization", `Bearer ${authToken}`)
       .send({
         title: "Test Album",
-        releaseDate: "2023-01-01",
+        releaseDate: "2004-04-14T00:00:00Z",
         artworkUrl: "https://example.com/artwork.jpg",
       });
 

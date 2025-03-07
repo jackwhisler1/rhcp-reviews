@@ -10,7 +10,10 @@ import asyncHandler from "../middleware/asyncRouteHandler.js";
 import { UpdateUserInput } from "../validators/user.validator.js";
 import prisma from "../db/prisma.js";
 import bcrypt from "bcryptjs";
-import { AuthenticationError, ValidationError } from "@/errors/customErrors.js";
+import {
+  AuthenticationError,
+  ValidationError,
+} from "../errors/customErrors.js";
 
 const saltRounds = 10;
 
