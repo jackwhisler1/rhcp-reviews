@@ -1,23 +1,19 @@
 {
   "compilerOptions": {
-    "target": "ES2020",
-    "module": "CommonJS",
-    "moduleResolution": "node",
+    "target": "ES2022",
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
     "esModuleInterop": true,
-    "allowImportingTsExtensions": true,
-    "noEmit": true,
     "outDir": "./dist",
-    "rootDir": "./",
     "strict": true,
-    "baseUrl": ".",
+    "skipLibCheck": true,
+    "rootDir": "src",
+    "baseUrl": ".",    
+    "types": ["node", "jest"],
     "paths": {
       "@/*": ["./src/*"]
-    },
-    "resolveJsonModule": true,
-    "skipLibCheck": true,
-    "types": ["@types/jest", "node" ]
-
+    }
   },
-  "include": ["src/**/*", "tests/**/*"],
-  "exclude": ["node_modules"]
+  "include": ["src/**/*"],
+  "exclude": ["node_modules", "dist"]
 }

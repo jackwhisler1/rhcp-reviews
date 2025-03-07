@@ -1,4 +1,4 @@
-import { app } from "@/server";
+import { app } from "../../src/server";
 import request from "supertest";
 import { prisma } from "./db";
 import bcrypt from "bcryptjs";

@@ -1,7 +1,10 @@
 import { z } from "zod";
 import { PrismaClientKnownRequestError } from "@prisma/client/runtime/library";
 import { Request, Response, NextFunction } from "express";
-import { AuthenticationError, ValidationError } from "@/errors/customErrors";
+import {
+  AuthenticationError,
+  ValidationError,
+} from "../errors/customErrors.js";
 
 export const errorHandler = (
   err: Error,
