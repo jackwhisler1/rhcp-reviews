@@ -1,21 +1,21 @@
 import { app } from "../src/server";
 import request from "supertest";
 import { getTestUserToken } from "./helpers/auth";
-import { setupTestData, cleanupTestData } from "./helpers/data";
+import { TestHelpers } from "./helpers/testHelpers";
 
 describe("Review Operations", () => {
   let authToken: string;
   let userId: string;
 
-  beforeAll(async () => {
-    await setupTestData();
+  beforeEach(async () => {
+    await TestHelpers.setupTestData();
     const auth = await getTestUserToken();
     authToken = auth.token;
     userId = auth.userId;
   });
 
-  afterAll(async () => {
-    await cleanupTestData();
+  afterEach(async () => {
+    await TestHelpers.cleanupTestData();
   });
 
   it("should create a review", async () => {
@@ -26,7 +26,6 @@ describe("Review Operations", () => {
         content: "Test review",
         rating: 7.5,
         songId: 519,
-        userId,
       });
 
     expect(response.status).toBe(201);

@@ -1,19 +1,22 @@
-import { app } from "../../src/server";
+import { app } from "@/server";
 import request from "supertest";
 import { prisma } from "./db";
+import bcrypt from "bcryptjs";
 
 export async function getTestUserToken() {
+  const hashedPassword = await bcrypt.hash("Test123!", 10); // Hash the test password
+
   const user = await prisma.user.upsert({
     where: { email: "test1@example.com" },
-    update: {},
+    update: { password: hashedPassword },
     create: {
       username: "testuser",
       email: "test1@example.com",
-      password: "$2a$10$Jt1f9PQBqsOKbc5Bdy/H6.b.3PVhha6JAWaFz0Z5QbFvMJyY1UDuW",
+      password: hashedPassword,
     },
   });
 
-  const loginRes = await request(app).post("/api/auth/login").send({
+  const loginRes = await request(app).post(`/api/auth/login`).send({
     email: "test1@example.com",
     password: "Test123!",
   });
@@ -24,6 +27,6 @@ export async function getTestUserToken() {
 
   return {
     token: loginRes.body.token,
-    userId: loginRes.body.id || user.id,
+    userId: loginRes.body.user.id,
   };
 }

@@ -1,22 +1,21 @@
 import request from "supertest";
 import { app } from "../src/server.js";
 import { getTestUserToken } from "./helpers/auth";
-import { setupTestData, cleanupTestData } from "./helpers/data";
-import jwt from "jsonwebtoken";
+import { TestHelpers } from "./helpers/testHelpers";
 
 describe("Album Operations", () => {
   let authToken: string;
   let userId: string;
 
   beforeAll(async () => {
-    await setupTestData();
+    await TestHelpers.setupTestData();
     const auth = await getTestUserToken();
     authToken = auth.token;
     userId = auth.userId;
   });
 
   afterAll(async () => {
-    await cleanupTestData();
+    await TestHelpers.cleanupTestData();
   });
 
   it("should create/read/update/delete album", async () => {
@@ -32,9 +31,8 @@ describe("Album Operations", () => {
 
     expect(createRes.status).toBe(201);
     const albumId = createRes.body.id;
-    console.log("Album ID:", albumId);
     // Read Album
-    const getRes = await request(app).get(`/api/albums/stats/${albumId}`);
+    const getRes = await request(app).get(`/api/albums/${albumId}/songs/stats`);
     expect(getRes.status).toBe(200);
 
     // Update Album

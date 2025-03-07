@@ -1,31 +1,75 @@
-// import { app } from "../src/server.js";
-// import { getTestUserToken } from "./helpers/auth";
-// import { setupTestData, cleanupTestData } from "./helpers/data";
-// import request from "supertest";
+import request from "supertest";
+import { app } from "../src/server";
+import { prisma } from "./helpers/db";
 
-// beforeEach(async () => {
-//   await cleanupTestData(); // Clear existing data
-// });
+function createRandomString(length: number) {
+  const chars =
+    "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+  let result = "";
+  for (let i = 0; i < length; i++) {
+    result += chars.charAt(Math.floor(Math.random() * chars.length));
+  }
+  return result;
+}
 
-// // Setup test environment once at the root level
-// setupTestEnvironment();
+describe("Authentication System", () => {
+  const id = createRandomString(7);
+  const testUser = {
+    email: `test-${id}@example.com`,
+    password: "Test123!",
+    username: `testuser-${id}`,
+  };
 
-// it("should register/login/access protected route", async () => {
-//   const unique = Date.now();
-//   const registerRes = await request(app).post("/api/users/register").send({
-//     username: `testuser333`,
-//     email: `test333@example.com`,
-//     password: "Test123!",
-//   });
-//   console.log(
-//     "Register Response:",
-//     registerRes.status,
-//     JSON.stringify(registerRes.body, null, 2)
-//   );
-//   expect(registerRes.status).toBe(201);
-// });
-describe("Auth Operations", () => {
-  it("should have at least one test", () => {
-    expect(true).toBeTruthy();
+  afterEach(async () => {
+    await prisma.user.deleteMany({
+      where: { email: testUser.email },
+    });
+  });
+
+  it("should register a new user", async () => {
+    const res = await request(app).post("/api/auth/register").send(testUser); // Remove the { body: ... } wrapper
+
+    expect(res.status).toBe(201);
+  });
+
+  it("should login with valid credentials", async () => {
+    // First register the user
+    await request(app).post("/api/auth/register").send(testUser);
+
+    const res = await request(app).post("/api/auth/login").send(testUser);
+
+    expect(res.status).toBe(200);
+  });
+
+  it("should reject invalid login credentials", async () => {
+    const res = await request(app).post("/api/auth/login").send({
+      email: "nonexistent@example.com",
+      password: "wrongpassword",
+    });
+
+    expect(res.status).toBe(401);
+  });
+
+  it("should protect unauthorized access", async () => {
+    const res = await request(app)
+      .get("/api/auth/me")
+      .set("Authorization", "Bearer invalidtoken");
+
+    expect(res.status).toBe(401);
+  });
+
+  it("should refresh access tokens", async () => {
+    // Register first
+    await request(app).post("/api/auth/register").send(testUser);
+
+    // Then login
+    const loginRes = await request(app).post("/api/auth/login").send(testUser);
+
+    const refreshRes = await request(app)
+      .post("/api/auth/refresh")
+      .send({ refreshToken: loginRes.body.refreshToken });
+
+    expect(refreshRes.status).toBe(200);
+    expect(refreshRes.body).toHaveProperty("accessToken");
   });
 });
