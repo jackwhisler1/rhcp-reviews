@@ -1,4 +1,4 @@
-import { Prisma } from "@prisma/client";
+import { Prisma, PrismaClient } from "@prisma/client";
 import prisma from "../db/prisma.js";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
@@ -37,7 +37,7 @@ export const registerUserService = async (data: {
         image: true,
       },
     });
-  } catch (error) {
+  } catch (error: any) {
     if (error instanceof Prisma.PrismaClientKnownRequestError) {
       if (error.code === "P2002") {
         const field = (error.meta?.target as string[])?.[0];
