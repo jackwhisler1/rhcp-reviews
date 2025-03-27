@@ -50,12 +50,20 @@ function setupMiddleware() {
   });
   app.use("/api/", apiLimiter);
 
-  // Static file serving
+  // Create uploads directory if it doesn't exist
+  const uploadsDir = path.join(directory, "uploads");
+  const fs = require("fs");
+  if (!fs.existsSync(uploadsDir)) {
+    fs.mkdirSync(uploadsDir, { recursive: true });
+  }
+
+  // Static file serving for src/images
   app.use(
     "/src/images",
-    express.static(path.join(directory, "../src/images")),
+    express.static(path.join(__dirname, "images")),
     (err: any, req: Request, res: Response, next: NextFunction) => {
       if (err) {
+        console.error("Image serving error:", err);
         res.status(404).send("Image not found");
       } else {
         next();
@@ -63,14 +71,31 @@ function setupMiddleware() {
     }
   );
 
-  // File upload
-  const upload = multer({ dest: "uploads/" });
+  // Configure multer to store files in the uploads directory
+  const storage = multer.diskStorage({
+    destination: function (req, file, cb) {
+      cb(null, path.join(directory, "uploads"));
+    },
+    filename: function (req, file, cb) {
+      const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1e9);
+      const ext = path.extname(file.originalname);
+      cb(null, file.fieldname + "-" + uniqueSuffix + ext);
+    },
+  });
+
+  const upload = multer({ storage });
+
+  // File upload endpoint
   app.post(
     "/api/upload",
     authenticate,
     upload.single("image"),
     asyncRouteHandler(async (req, res) => {
-      res.json({ url: `/images/${req.file?.filename}` });
+      if (!req.file) {
+        return res.status(400).json({ error: "No file uploaded" });
+      }
+      // Return URL that matches the static serving path
+      res.json({ url: `/images/${req.file.filename}` });
     })
   );
 
@@ -99,6 +124,42 @@ function setupMiddleware() {
 }
 
 function setupRoutes() {
+  // Debug endpoint to list available images
+  app.get("/api/debug/images", (req, res) => {
+    const fs = require("fs");
+    const uploadsDir = path.join(directory, "uploads");
+
+    try {
+      if (!fs.existsSync(uploadsDir)) {
+        return res.json({
+          error: "Uploads directory doesn't exist",
+          path: uploadsDir,
+        });
+      }
+
+      const files = fs.readdirSync(uploadsDir);
+      const imageDetails = files.map((file) => {
+        const stats = fs.statSync(path.join(uploadsDir, file));
+        return {
+          name: file,
+          size: stats.size,
+          created: stats.birthtime,
+          url: `/images/${file}`,
+        };
+      });
+
+      res.json({
+        uploadsDir,
+        imageCount: files.length,
+        images: imageDetails,
+      });
+    } catch (error) {
+      res
+        .status(500)
+        .json({ error: "Error listing images", message: error.message });
+    }
+  });
+
   // Routes
   app.use("/api/albums", albumsRouter);
   app.use("/api/songs", songsRouter);
