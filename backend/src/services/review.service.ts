@@ -105,6 +105,96 @@ export const getReviewsService = async (filters: ReviewFilters) => {
   };
 };
 
+export const updateReviewService = async (
+  reviewId: number,
+  userId: number,
+  data: {
+    content?: string;
+    rating: number;
+  }
+) => {
+  // Validate rating
+  if (data.rating < 0 || data.rating > 10) {
+    throw new ValidationError("Rating must be between 0 and 10", {
+      rating: "Invalid rating value",
+    });
+  }
+
+  // Find the review
+  const review = await prisma.review.findUnique({
+    where: { id: reviewId },
+  });
+
+  if (!review) {
+    throw new NotFoundError("Review not found");
+  }
+
+  // Check if the user owns the review
+  if (review.userId !== userId) {
+    throw new ForbiddenError("Not authorized to update this review");
+  }
+
+  // Update the review
+  return prisma.review.update({
+    where: { id: reviewId },
+    data: {
+      content: data.content,
+      rating: data.rating,
+    },
+  });
+};
+
+export const deleteReviewService = async (reviewId: number, userId: number) => {
+  // Find the review
+  const review = await prisma.review.findUnique({
+    where: { id: reviewId },
+  });
+
+  if (!review) {
+    throw new NotFoundError("Review not found");
+  }
+
+  // Check if the user owns the review
+  if (review.userId !== userId) {
+    throw new ForbiddenError("Not authorized to delete this review");
+  }
+
+  // Delete the review
+  return prisma.review.delete({
+    where: { id: reviewId },
+  });
+};
+
+export const getSongReviewsService = async (
+  songId: number,
+  groupId?: number,
+  userId?: number
+) => {
+  const where: Prisma.ReviewWhereInput = {
+    songId,
+    ...(groupId ? { groupId } : {}),
+  };
+
+  const reviews = await prisma.review.findMany({
+    where,
+    include: {
+      author: {
+        select: {
+          id: true,
+          username: true,
+          image: true,
+        },
+      },
+    },
+    orderBy: { createdAt: "desc" },
+  });
+
+  return {
+    reviews,
+    total: reviews.length,
+  };
+};
+
 // Helper function to parse filter parameters
 const parseFilters = (filters: ReviewFilters): ParsedFilters => {
   return {

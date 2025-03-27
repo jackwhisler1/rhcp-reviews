@@ -18,11 +18,16 @@ interface SongStatsProps {
 const SongStats = ({ albumId, albumTitle, userId, groups }: SongStatsProps) => {
   const [filters, setFilters] = useState<FiltersState>({
     groupId: "all",
-    userId: "all",
+    userId: userId || "all", // Default to current user if available
     showUserOnly: false,
   });
-
-  const { stats, loading, error } = useAlbumStats(albumId, filters);
+  const handleReviewSubmitted = () => {
+    refreshStats();
+  };
+  const { stats, loading, error, refreshStats } = useAlbumStats(
+    albumId,
+    filters
+  );
   const { members } = useGroupMembers(filters.groupId);
 
   const handleFilterChange = (newFilters: Partial<FiltersState>) => {
@@ -55,7 +60,8 @@ const SongStats = ({ albumId, albumTitle, userId, groups }: SongStatsProps) => {
       <ReviewsTable
         songStats={stats}
         filters={filters}
-        onReviewClick={handleReviewClick}
+        albumId={albumId}
+        onReviewSubmitted={refreshStats}
       />
     </div>
   );

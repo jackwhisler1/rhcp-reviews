@@ -1,5 +1,5 @@
 import DOMPurify from "dompurify";
-import { AuthFormData, AuthResponse } from "../types/auth-types";
+import { AuthFormData, AuthResponse, User } from "../types/auth-types";
 import axios from "axios";
 
 // Configure secure axios instance
@@ -39,65 +39,82 @@ export const login = async (email: string, password: string) => {
 
 export const logout = () => {
   sessionStorage.removeItem("rht-user");
+  // Clear token from axios defaults
+  delete api.defaults.headers.common["Authorization"];
 };
 
-// Secure storage with sessionStorage and encryption
+// Secure storage with sessionStorage
 export const storeAuthData = (userData: AuthResponse) => {
   const storageData = {
     id: userData.user.id,
     email: userData.user.email,
     username: userData.user.username,
+    image: userData.user.image,
     token: userData.token,
     refreshToken: userData.refreshToken,
   };
 
-  sessionStorage.setItem(
-    "rht-user",
-    JSON.stringify({
-      ...storageData,
-      // Basic obfuscation (not true encryption, but deters casual inspection)
-      _obfuscated: btoa(JSON.stringify(storageData)),
-    })
-  );
+  sessionStorage.setItem("rht-user", JSON.stringify(storageData));
+
+  // Set the token for future API calls
+  api.defaults.headers.common["Authorization"] = `Bearer ${userData.token}`;
 };
 
-// Axios security interceptor
-api.interceptors.request.use((config) => {
-  const user = getCurrentUser();
-  if (user?.token) {
-    config.headers = config.headers || {};
-    config.headers.Authorization = `Bearer ${user.token}`;
-  }
-  return config;
-});
+// Get current user from session storage
+export const getCurrentUser = () => {
+  const userData = sessionStorage.getItem("rht-user");
+  if (!userData) return null;
 
-// Response interceptor for token refresh
-api.interceptors.response.use(
-  (response) => response,
-  async (error) => {
-    const originalRequest = error.config;
+  try {
+    const parsed = JSON.parse(userData);
 
-    if (error.response?.status === 401 && !originalRequest._retry) {
-      originalRequest._retry = true;
-
-      try {
-        const newToken = await refreshAuthToken();
-        if (newToken) {
-          originalRequest.headers.Authorization = `Bearer ${newToken}`;
-          return api(originalRequest);
-        }
-      } catch (refreshError) {
-        logout();
-        return Promise.reject(refreshError);
-      }
+    // Set the token for API calls if a valid user is found
+    if (parsed.token) {
+      api.defaults.headers.common["Authorization"] = `Bearer ${parsed.token}`;
     }
 
-    return Promise.reject(error);
+    return parsed;
+  } catch (error) {
+    console.error("Invalid user data", error);
+    return null;
   }
-);
+};
 
+// Function to fetch the current user from the API
+export const fetchCurrentUser = async (): Promise<User> => {
+  try {
+    // Add token from session storage
+    const user = getCurrentUser();
+    if (user?.token) {
+      api.defaults.headers.common["Authorization"] = `Bearer ${user.token}`;
+      console.log("Set Authorization header for /me request");
+    } else {
+      console.warn("No token available for /me request");
+    }
+
+    console.log("Fetching current user from API");
+    const response = await api.get<User>("/auth/me");
+    console.log("Current user fetched successfully:", response.data);
+    return response.data;
+  } catch (error: any) {
+    console.error("Error fetching current user:", error.message);
+
+    if (error.response?.status === 401) {
+      console.log("401 Unauthorized, attempting token refresh");
+      // Try to refresh the token
+      const refreshSuccess = await refreshAuthToken();
+      if (refreshSuccess) {
+        console.log("Token refresh successful, retrying /me request");
+        // Retry with the new token
+        const response = await api.get<User>("/auth/me");
+        return response.data;
+      }
+    }
+    throw error;
+  }
+};
 // Token refresh logic
-const refreshAuthToken = async () => {
+export const refreshAuthToken = async () => {
   try {
     const user = getCurrentUser();
     if (!user?.refreshToken) throw new Error("No refresh token");
@@ -115,41 +132,59 @@ const refreshAuthToken = async () => {
         id: user.id,
         email: user.email,
         username: user.username,
+        image: user.image,
       },
       token: response.data.token,
       refreshToken: response.data.refreshToken,
     });
 
-    return response.data.token;
+    return true;
   } catch (error) {
+    console.error("Token refresh failed:", error);
     logout();
-    return null;
+    return false;
   }
 };
 
-export const getCurrentUser = ():
-  | (AuthResponse["user"] & {
-      token?: string;
-      refreshToken?: string;
-    })
-  | null => {
-  const userData = sessionStorage.getItem("rht-user");
-  if (!userData) return null;
+// Set up response interceptor for token refresh
+api.interceptors.response.use(
+  (response) => response,
+  async (error) => {
+    const originalRequest = error.config;
 
-  try {
-    const parsed = JSON.parse(userData);
-    // Verify obfuscation match
-    if (btoa(JSON.stringify(parsed))) {
-      return {
-        id: parsed.id,
-        email: parsed.email,
-        username: parsed.username,
-        token: parsed.token,
-      };
+    // If received 401 and we haven't tried refreshing yet
+    if (
+      error.response?.status === 401 &&
+      !originalRequest._retry &&
+      originalRequest.url !== "/auth/refresh" // Prevent infinite loop
+    ) {
+      originalRequest._retry = true;
+
+      try {
+        const refreshSuccess = await refreshAuthToken();
+        if (refreshSuccess) {
+          // Update the token in the original request
+          const user = getCurrentUser();
+          if (user?.token) {
+            originalRequest.headers["Authorization"] = `Bearer ${user.token}`;
+          }
+          return api(originalRequest);
+        }
+      } catch (refreshError) {
+        console.error("Token refresh error:", refreshError);
+        logout();
+        return Promise.reject(refreshError);
+      }
     }
-    return null;
-  } catch (error) {
-    console.error("Invalid user data");
-    return null;
+
+    return Promise.reject(error);
   }
-};
+);
+
+// Initialize auth state from session storage on module load
+(function initAuthState() {
+  const user = getCurrentUser();
+  if (user?.token) {
+    api.defaults.headers.common["Authorization"] = `Bearer ${user.token}`;
+  }
+})();

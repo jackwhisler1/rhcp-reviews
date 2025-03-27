@@ -7,6 +7,7 @@ import LoadingSpinner from "../components/common/LoadingSpinner";
 import { useAuth } from "../context/AuthContext";
 import { useUserGroups } from ".././hooks/useUserGroups";
 import Navbar from "../components/common/Navbar";
+import AuthDebugger from "../context/AuthDebugger";
 
 const HomePage = () => {
   const { user, loading: authLoading, logout } = useAuth();
@@ -27,6 +28,7 @@ const HomePage = () => {
   return (
     <>
       <BaseContainer>
+        <AuthDebugger />
         <div className="flex flex-col bg-white items-center justify-center px-4">
           {" "}
           <Navbar />

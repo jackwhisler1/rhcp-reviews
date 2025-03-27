@@ -12,26 +12,33 @@ export interface SongStat {
 
 export interface UserReview {
   id: number;
+  userId: number;
+  groupId?: number;
   username: string;
   rating: number;
   content: string;
   createdAt: string;
 }
 
-export interface Group {
-  id: number;
-  name: string;
-  description?: string;
-  image?: string;
-  isPrivate: boolean;
-  inviteCode?: string;
-  createdAt: Date;
-}
-
 export interface GroupMember {
   id: number;
   username: string;
-  image?: string;
+  email: string;
+  image?: string | null;
+  role: string;
+  joinedAt: string;
+}
+
+export interface Group {
+  id: number;
+  name: string;
+  description?: string | null;
+  image?: string | null;
+  isPrivate: boolean;
+  memberCount: number;
+  role: string;
+  joinedAt: string;
+  createdAt: string;
 }
 
 export interface FiltersState {

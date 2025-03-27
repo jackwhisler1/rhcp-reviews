@@ -15,6 +15,7 @@ import songsRouter from "./routes/songs.js";
 import usersRouter from "./routes/users.js";
 import groupsRouter from "./routes/groups.js";
 import reviewRoutes from "./routes/reviews.js";
+import userRoutes from "./routes/userRoutes.js";
 
 // Middleware
 import { errorHandler } from "./middleware/errorHandler.js";
@@ -153,7 +154,7 @@ function setupRoutes() {
         imageCount: files.length,
         images: imageDetails,
       });
-    } catch (error) {
+    } catch (error: any) {
       res
         .status(500)
         .json({ error: "Error listing images", message: error.message });
@@ -166,7 +167,7 @@ function setupRoutes() {
   app.use("/api/auth", usersRouter);
   app.use("/api/groups", authenticate, groupsRouter);
   app.use("/api/reviews", authenticate, reviewRoutes);
-
+  app.use("/api/users", userRoutes);
   // Default route
   app.get("/", (req, res) => {
     res.json({

@@ -5,23 +5,33 @@ import {
   getCurrentUserService,
   deleteUserService,
   refreshTokenService,
+  updateUserService,
 } from "../services/user.service.js";
 import asyncHandler from "../middleware/asyncRouteHandler.js";
 import { UpdateUserInput } from "../validators/user.validator.js";
-import prisma from "../db/prisma.js";
-import bcrypt from "bcryptjs";
 import {
   AuthenticationError,
   ValidationError,
 } from "../errors/customErrors.js";
 
-const saltRounds = 10;
-
 export const registerUserController = asyncHandler(
   async (req: Request, res: Response) => {
     try {
+      // Call the service to register the user
       const user = await registerUserService(req.body);
-      res.status(201).json(user);
+
+      // Generate tokens for the newly registered user
+      const { token, refreshToken } = await loginUserService(
+        req.body.email,
+        req.body.password
+      );
+
+      // Return user info and tokens
+      res.status(201).json({
+        user,
+        token,
+        refreshToken,
+      });
     } catch (error) {
       console.error("Validation Error:", error);
       const typedError = error as any;
@@ -36,7 +46,13 @@ export const loginUserController = asyncHandler(
       req.body.email,
       req.body.password
     );
-    res.json({ token, refreshToken, user });
+
+    // Return tokens and user data for frontend storage
+    res.json({
+      token,
+      refreshToken,
+      user,
+    });
   }
 );
 
@@ -58,8 +74,14 @@ export const refreshTokenController = asyncHandler(
     }
 
     try {
+      // Get new tokens from the service
       const tokens = await refreshTokenService(refreshToken);
-      res.json(tokens);
+
+      // Map the service response to what the frontend expects
+      res.json({
+        token: tokens.accessToken,
+        refreshToken: tokens.refreshToken,
+      });
     } catch (error) {
       if (error instanceof AuthenticationError) {
         res.status(401).json({ error: error.message });
@@ -74,21 +96,8 @@ export const updateUserController = asyncHandler(
   async (req: Request, res: Response) => {
     const updateData: UpdateUserInput = req.body;
 
-    // If password is being updated, hash it first
-    if (updateData.password) {
-      updateData.password = await bcrypt.hash(updateData.password, saltRounds);
-    }
-
-    const user = await prisma.user.update({
-      where: { id: req.user!.id },
-      data: updateData,
-      select: {
-        id: true,
-        email: true,
-        username: true,
-        image: true,
-      },
-    });
+    // Use the service to update user data
+    const user = await updateUserService(req.user!.id, updateData);
 
     res.json(user);
   }
