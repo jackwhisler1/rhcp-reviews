@@ -96,6 +96,10 @@ button:hover {
   background-color: #b1a7a6; /* Blood Red */
 }
 
+svg.star-svg {
+  display: inline;
+}
+
 /* Secondary Button */
 button.secondary {
   background-color: #161a1d; /* Eerie Black */
