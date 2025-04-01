@@ -43,7 +43,9 @@ export const fetchUserGroups = async (userId: number) => {
  */
 export const fetchMyGroups = async () => {
   try {
-    const data = await fetchWrapper("/groups", getAuthHeader());
+    const options = getAuthHeader();
+    console.log("options:--------------------", options);
+    const data = await fetchWrapper("/groups", options);
     return data;
   } catch (error) {
     console.error("Error fetching my groups:", error);
