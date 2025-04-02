@@ -48,41 +48,102 @@ export const deleteAlbumController = asyncHandler(
 
 export const getAlbumSongStatsController = asyncHandler(
   async (req: Request, res: Response) => {
-    const albumId = Number(req.params.albumId);
-    const groupId = req.query.groupId ? Number(req.query.groupId) : undefined;
-    const userFilter = req.query.userFilter === "true";
+    try {
+      const albumId = Number(req.params.albumId);
+      const groupId = req.query.groupId ? Number(req.query.groupId) : undefined;
+      const userId = req.query.userId ? Number(req.query.userId) : undefined;
 
-    if (userFilter && !req.user) {
-      return res.status(401).json({ error: "Authentication required" });
-    }
+      console.log(
+        `Fetching album stats - albumId: ${albumId}, groupId: ${groupId}, userId: ${userId}, authenticated: ${!!req.user}`
+      );
 
-    // Authorization check for private groups
-    if (groupId) {
-      const group = await prisma.group.findUnique({
-        where: { id: groupId },
-        select: { isPrivate: true },
-      });
+      // Public stats don't need authentication
+      if (!groupId) {
+        console.log("Fetching public album stats");
+        const stats = await getAlbumSongStatsService({
+          albumId,
+          groupId: undefined,
+          userId,
+        });
+        return res.json(stats); // Using return to prevent further execution
+      }
 
-      if (!group) return res.status(404).json({ error: "Group not found" });
+      // Group stats require authentication
+      if (groupId && !req.user) {
+        console.log("Attempted to access group stats without authentication");
+        return res
+          .status(401)
+          .json({ error: "Authentication required for group stats" });
+      }
 
-      if (group.isPrivate) {
-        if (!req.user) return res.status(403).json({ error: "Access denied" });
-
-        const membership = await prisma.userGroup.findUnique({
-          where: { userId_groupId: { userId: req.user.id, groupId } },
+      // Authorization check for private groups
+      if (groupId) {
+        console.log(`Checking group access for groupId: ${groupId}`);
+        const group = await prisma.group.findUnique({
+          where: { id: groupId },
+          select: { isPrivate: true },
         });
 
-        if (!membership)
-          return res.status(403).json({ error: "Not a group member" });
+        if (!group) {
+          console.log("Group not found");
+          return res.status(404).json({ error: "Group not found" });
+        }
+
+        if (group.isPrivate) {
+          console.log("Checking membership for private group");
+          // Must be authenticated for private groups
+          if (!req.user) {
+            console.log("No user authenticated for private group access");
+            return res
+              .status(401)
+              .json({ error: "Authentication required for private group" });
+          }
+
+          // Must be a member of private groups
+          const membership = await prisma.userGroup.findUnique({
+            where: {
+              userId_groupId: {
+                userId: req.user.id,
+                groupId,
+              },
+            },
+          });
+
+          if (!membership) {
+            console.log(
+              `User ${req.user.id} is not a member of private group ${groupId}`
+            );
+            return res.status(403).json({ error: "Not a group member" });
+          }
+
+          console.log(
+            `User ${req.user.id} has access to private group ${groupId}`
+          );
+        } else {
+          console.log("Group is public, proceeding with request");
+        }
+      }
+
+      // If we got here, the user has the necessary permissions
+      console.log("Fetching album stats with permissions validated");
+      const stats = await getAlbumSongStatsService({
+        albumId,
+        groupId,
+        userId: req.query.userFilter === "true" ? req.user?.id : userId,
+      });
+
+      return res.json(stats); // Using return to prevent further execution
+    } catch (error) {
+      console.error("Error in getAlbumSongStatsController:", error);
+
+      // Check if headers have already been sent
+      if (!res.headersSent) {
+        return res
+          .status(500)
+          .json({ error: "Server error fetching album stats" });
+      } else {
+        console.error("Headers already sent, cannot send error response");
       }
     }
-
-    const stats = await getAlbumSongStatsService({
-      albumId,
-      groupId,
-      userId: userFilter ? req.user?.id : undefined,
-    });
-
-    res.json(stats);
   }
 );

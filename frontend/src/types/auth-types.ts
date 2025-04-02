@@ -13,6 +13,14 @@ export interface User {
   refreshToken?: string;
 }
 
+export interface AuthContextType {
+  user: User | null;
+  loading: boolean;
+  isAuthenticated: boolean;
+  setUser: React.Dispatch<React.SetStateAction<User | null>>;
+  logout: () => void;
+}
+
 export interface AuthResponse {
   token: string;
   refreshToken: string;

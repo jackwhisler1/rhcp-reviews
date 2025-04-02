@@ -2,7 +2,7 @@ import { getCurrentUser } from "./authService";
 import { fetchWrapper } from "./api";
 
 // Set up auth headers
-const getAuthHeader = () => {
+export const getAuthHeader = () => {
   const user = getCurrentUser();
   console.log(
     "Auth token:",

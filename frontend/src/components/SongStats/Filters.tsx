@@ -4,6 +4,7 @@ interface FiltersProps {
   groups: Group[];
   members: GroupMember[];
   filters: FiltersState;
+  loadingMembers: boolean;
   onFilterChange: (newFilters: Partial<FiltersState>) => void;
 }
 
@@ -11,6 +12,7 @@ const Filters = ({
   groups,
   members,
   filters,
+  loadingMembers,
   onFilterChange,
 }: FiltersProps) => {
   const handleGroupChange = (groupId: string) => {

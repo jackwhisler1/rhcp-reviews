@@ -6,7 +6,7 @@ import {
   getAlbumsController,
   updateAlbumController,
 } from "../controllers/album.controller.js";
-import { authenticate } from "../middleware/auth.js";
+import { authenticate, optionalAuthenticate } from "../middleware/auth.js";
 import { validate } from "../middleware/validate.js";
 import {
   createAlbumSchema,
@@ -22,7 +22,11 @@ router.post(
   createAlbumController
 );
 
-router.get("/:albumId/songs/stats", getAlbumSongStatsController);
+router.get(
+  "/:albumId/songs/stats",
+  optionalAuthenticate,
+  getAlbumSongStatsController
+);
 
 router.get("/", getAlbumsController);
 

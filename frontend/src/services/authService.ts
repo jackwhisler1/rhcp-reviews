@@ -11,6 +11,14 @@ const api = axios.create({
     "X-Requested-With": "XMLHttpRequest",
   },
 });
+export const setAuthHeader = (token: string) => {
+  if (!token) return;
+
+  // Set for api instance
+  api.defaults.headers.common["Authorization"] = `Bearer ${token}`;
+  // Also set for global axios
+  axios.defaults.headers.common["Authorization"] = `Bearer ${token}`;
+};
 
 // XSS sanitization helper
 const sanitizeInput = (data: unknown) =>
@@ -38,45 +46,133 @@ export const login = async (email: string, password: string) => {
 };
 
 export const logout = () => {
+  console.log("Logging out and clearing auth data");
   sessionStorage.removeItem("rht-user");
   // Clear token from axios defaults
   delete api.defaults.headers.common["Authorization"];
 };
 
-// Secure storage with sessionStorage
+// Secure storage with sessionStorage - IMPROVED VERSION
 export const storeAuthData = (userData: AuthResponse) => {
-  const storageData = {
-    id: userData.user.id,
-    email: userData.user.email,
-    username: userData.user.username,
-    image: userData.user.image,
-    token: userData.token,
-    refreshToken: userData.refreshToken,
-  };
-
-  sessionStorage.setItem("rht-user", JSON.stringify(storageData));
-
-  // Set the token for future API calls
-  api.defaults.headers.common["Authorization"] = `Bearer ${userData.token}`;
-};
-
-// Get current user from session storage
-export const getCurrentUser = () => {
-  const userData = sessionStorage.getItem("rht-user");
-  if (!userData) return null;
+  if (!userData.token) {
+    console.error("Cannot store auth data: no token provided");
+    return;
+  }
 
   try {
-    const parsed = JSON.parse(userData);
+    const storageData = {
+      id: userData.user.id,
+      email: userData.user.email,
+      username: userData.user.username,
+      image: userData.user.image,
+      token: userData.token,
+      refreshToken: userData.refreshToken,
+    };
 
-    // Set the token for API calls if a valid user is found
-    if (parsed.token) {
-      api.defaults.headers.common["Authorization"] = `Bearer ${parsed.token}`;
+    console.log(
+      "Storing auth data with token:",
+      userData.token.substring(0, 15) + "..."
+    );
+    sessionStorage.setItem("rht-user", JSON.stringify(storageData));
+
+    // Set the token for future API calls
+    api.defaults.headers.common["Authorization"] = `Bearer ${userData.token}`;
+    console.log("Set Authorization header for future API calls");
+  } catch (error) {
+    console.error("Error storing auth data:", error);
+  }
+};
+
+// Get current user from session storage - IMPROVED VERSION
+export const getCurrentUser = () => {
+  try {
+    const userData = sessionStorage.getItem("rht-user");
+    if (!userData) {
+      console.log("No user data found in session storage");
+      return null;
     }
 
-    return parsed;
+    try {
+      const parsed = JSON.parse(userData);
+
+      // Validate parsed user data
+      if (!parsed.id || !parsed.token) {
+        console.error("Invalid user data structure in storage:", parsed);
+        return null;
+      }
+
+      // Set the token for API calls if a valid user is found
+      if (parsed.token) {
+        api.defaults.headers.common["Authorization"] = `Bearer ${parsed.token}`;
+        console.log(
+          "Retrieved token from storage:",
+          parsed.token.substring(0, 15) + "..."
+        );
+      }
+
+      return parsed;
+    } catch (error) {
+      console.error("Invalid user data", error);
+      sessionStorage.removeItem("rht-user"); // Clean up invalid data
+      return null;
+    }
   } catch (error) {
-    console.error("Invalid user data", error);
+    console.error("Error retrieving current user:", error);
     return null;
+  }
+};
+
+// Function to check if the token is valid
+export const checkStoredToken = () => {
+  try {
+    // Get the user data from session storage
+    const userData = sessionStorage.getItem("rht-user");
+    if (!userData) {
+      console.warn("No user data in session storage");
+      return false;
+    }
+
+    // Parse the user data
+    const parsedData = JSON.parse(userData);
+
+    // Check if token exists
+    if (!parsedData.token) {
+      console.warn("No token in stored user data");
+      return false;
+    }
+
+    // Check token format (should be a JWT - three parts separated by dots)
+    const tokenParts = parsedData.token.split(".");
+    if (tokenParts.length !== 3) {
+      console.warn("Token does not appear to be a valid JWT format");
+      return false;
+    }
+
+    // Log token info for debugging
+    console.log("Token exists and appears to be valid format");
+    console.log(
+      "Token starts with:",
+      parsedData.token.substring(0, 15) + "..."
+    );
+
+    // Try to decode the JWT payload (middle part)
+    try {
+      const payload = JSON.parse(atob(tokenParts[1]));
+      const expiry = payload.exp ? new Date(payload.exp * 1000) : null;
+
+      console.log("Token payload:", payload);
+      if (expiry) {
+        console.log("Token expires:", expiry);
+        console.log("Token expired?", expiry < new Date());
+      }
+    } catch (e) {
+      console.warn("Could not decode token payload");
+    }
+
+    return true;
+  } catch (error) {
+    console.error("Error checking stored token:", error);
+    return false;
   }
 };
 
@@ -113,6 +209,7 @@ export const fetchCurrentUser = async (): Promise<User> => {
     throw error;
   }
 };
+
 // Token refresh logic
 export const refreshAuthToken = async () => {
   try {
@@ -186,5 +283,8 @@ api.interceptors.response.use(
   const user = getCurrentUser();
   if (user?.token) {
     api.defaults.headers.common["Authorization"] = `Bearer ${user.token}`;
+    console.log("Set initial Authorization header from session storage");
   }
 })();
+
+export { api };

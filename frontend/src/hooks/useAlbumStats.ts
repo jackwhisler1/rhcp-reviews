@@ -14,16 +14,44 @@ export const useAlbumStats = (albumId: number, filters: FiltersState) => {
       setLoading(true);
       setError(null);
 
-      const params = {
-        groupId: filters.groupId,
-        userId: filters.showUserOnly ? filters.userId : undefined,
-      };
+      const params: Record<string, any> = {};
 
+      // Only add groupId if it's not "all"
+      if (filters.groupId && filters.groupId !== "all") {
+        params.groupId = filters.groupId;
+      }
+
+      // Only add userId if showUserOnly is true and userId is not "all"
+      if (filters.showUserOnly && filters.userId && filters.userId !== "all") {
+        params.userId = filters.userId;
+      }
+
+      console.log("Fetching album stats with params:", params);
       const data = await getAlbumStats(albumId, params);
-      setStats(Array.isArray(data) ? data : []);
+
+      // Make sure the result is an array
+      if (Array.isArray(data)) {
+        setStats(data);
+      } else {
+        console.warn("Unexpected response format:", data);
+        setStats([]);
+      }
     } catch (err: any) {
       console.error("Error fetching album stats:", err);
-      setError(err.message || "Failed to load song statistics");
+
+      // Set a user-friendly error message
+      if (err?.response?.status === 403) {
+        setError(
+          "Forbidden: You don't have permission to view these group ratings"
+        );
+      } else if (err?.response?.status === 401) {
+        setError("You need to log in to view these ratings");
+      } else {
+        setError(err.message || "Failed to load song statistics");
+      }
+
+      // Set empty stats
+      setStats([]);
     } finally {
       setLoading(false);
     }
