@@ -19,7 +19,7 @@ import userRoutes from "./routes/userRoutes.js";
 
 // Middleware
 import { errorHandler } from "./middleware/errorHandler.js";
-import { authenticate } from "./middleware/auth.js";
+import { authenticate, optionalAuthenticate } from "./middleware/auth.js";
 import asyncRouteHandler from "./middleware/asyncRouteHandler.js";
 import { createRequire } from "module";
 const require = createRequire(import.meta.url);
@@ -166,7 +166,7 @@ function setupRoutes() {
   app.use("/api/songs", songsRouter);
   app.use("/api/auth", usersRouter);
   app.use("/api/groups", authenticate, groupsRouter);
-  app.use("/api/reviews", authenticate, reviewRoutes);
+  app.use("/api/reviews", optionalAuthenticate, reviewRoutes);
   app.use("/api/users", userRoutes);
   // Default route
   app.get("/", (req, res) => {

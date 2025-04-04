@@ -28,7 +28,7 @@ const HomePage = () => {
   return (
     <>
       <BaseContainer>
-        <AuthDebugger />
+        {/* <AuthDebugger /> */}
         <div className="flex flex-col bg-white items-center justify-center px-4">
           {" "}
           <Navbar />

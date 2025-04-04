@@ -242,3 +242,31 @@ const parseDate = (dateString?: string): Date | undefined => {
   const date = new Date(dateString);
   return isNaN(date.getTime()) ? undefined : date;
 };
+
+export const getUserSongReviewsService = async (
+  userId: number,
+  songIds: number[]
+) => {
+  if (!userId || !songIds.length) {
+    return { reviews: [] };
+  }
+
+  const reviews = await prisma.review.findMany({
+    where: {
+      userId,
+      songId: { in: songIds },
+    },
+    select: {
+      id: true,
+      songId: true,
+      rating: true,
+      content: true,
+      createdAt: true,
+    },
+  });
+
+  return {
+    reviews,
+    total: reviews.length,
+  };
+};

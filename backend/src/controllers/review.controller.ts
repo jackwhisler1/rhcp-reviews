@@ -4,6 +4,7 @@ import {
   deleteReviewService,
   getReviewsService,
   getSongReviewsService,
+  getUserSongReviewsService,
   updateReviewService,
 } from "../services/review.service.js";
 import asyncHandler from "../middleware/asyncRouteHandler.js";
@@ -58,6 +59,33 @@ export const getSongReviewsController = asyncHandler(
       parseInt(songId as string),
       groupId ? parseInt(groupId as string) : undefined,
       req.user?.id
+    );
+
+    res.json(result);
+  }
+);
+
+export const getUserSongReviewsController = asyncHandler(
+  async (req: Request, res: Response) => {
+    const { userId, songIds } = req.query;
+
+    if (!userId) {
+      return res.status(400).json({ error: "User ID is required" });
+    }
+
+    if (!songIds) {
+      return res.status(400).json({ error: "Song IDs are required" });
+    }
+
+    // Parse the comma-separated list of song IDs
+    const parsedSongIds = (songIds as string)
+      .split(",")
+      .map((id) => parseInt(id))
+      .filter((id) => !isNaN(id));
+
+    const result = await getUserSongReviewsService(
+      parseInt(userId as string),
+      parsedSongIds
     );
 
     res.json(result);

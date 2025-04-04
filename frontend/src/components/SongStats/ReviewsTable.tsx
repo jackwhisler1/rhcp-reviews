@@ -1,8 +1,8 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { SongStat, FiltersState, UserReview } from "../../types/rhcp-types";
 import { Rating } from "react-simple-star-rating";
 import { useAuth } from "../../context/AuthContext";
-import axios from "axios";
+import { fetchWrapper } from "../../services/api";
 
 interface TableProps {
   songStats: SongStat[];
@@ -37,6 +37,52 @@ const ReviewsTable = ({
   }>({});
   const [submitting, setSubmitting] = useState<{ [key: number]: boolean }>({});
   const [error, setError] = useState<string | null>(null);
+  useEffect(() => {
+    const initialRatings: { [key: number]: number } = {};
+
+    songStats.forEach((song) => {
+      if (song.userRating !== undefined && song.userRating !== null) {
+        initialRatings[song.id] = song.userRating;
+      }
+    });
+
+    if (Object.keys(initialRatings).length > 0) {
+      setCurrentRatings((prev) => ({
+        ...prev,
+        ...initialRatings,
+      }));
+    }
+  }, [songStats]);
+
+  // Update currentRatings when songStats change (to reflect updated ratings)
+  useEffect(() => {
+    const newRatings = { ...currentRatings };
+    let hasChanges = false;
+
+    songStats.forEach((song) => {
+      if (song.userRating && song.userRating !== currentRatings[song.id]) {
+        newRatings[song.id] = song.userRating;
+        hasChanges = true;
+      }
+    });
+
+    if (hasChanges) {
+      setCurrentRatings(newRatings);
+    }
+  }, [songStats]);
+
+  // Helper function to get auth headers
+  const getAuthHeader = () => {
+    const headers: Record<string, string> = {
+      "Content-Type": "application/json",
+    };
+
+    if (user?.token) {
+      headers["Authorization"] = `Bearer ${user.token}`;
+    }
+
+    return { headers };
+  };
 
   const handleExpand = async (songId: number) => {
     if (expandedSongId === songId) {
@@ -57,22 +103,19 @@ const ReviewsTable = ({
           queryParams.append("groupId", filters.groupId);
         }
 
-        const response: any = await axios.get(
-          `/api/reviews?${queryParams.toString()}`
+        const response = await fetchWrapper(
+          `/reviews/song?${queryParams.toString()}`,
+          getAuthHeader()
         );
-
-        if (response.status !== 200) {
-          throw new Error("Failed to fetch reviews");
-        }
 
         setUserReviews({
           ...userReviews,
-          [songId]: response.data.reviews || [],
+          [songId]: response.reviews || [],
         });
 
         // Find user's review if it exists
         if (isAuthenticated && user) {
-          const userReview = response.data.reviews?.find(
+          const userReview = response.reviews?.find(
             (review: UserReview) => review.userId === user.id
           );
 
@@ -113,8 +156,10 @@ const ReviewsTable = ({
     setSubmitting({ ...submitting, [songId]: true });
 
     try {
+      // Find this song in the songStats to check if user already has a review
       const songData = songStats.find((song) => song.id === songId);
-      const userRating = songData?.userRating;
+      const hasExistingReview =
+        songData?.userRating !== undefined && songData?.userRating !== null;
       const rating = currentRatings[songId] || 0;
 
       if (rating === 0) {
@@ -128,50 +173,58 @@ const ReviewsTable = ({
         groupId: filters.groupId !== "all" ? parseInt(filters.groupId) : null,
       };
 
-      // Determine if we're creating or updating
-      const method =
-        userRating !== undefined && userRating !== null ? "PUT" : "POST";
-
       // Find the review ID if we're updating
-      let endpoint = "/api/reviews";
-      if (method === "PUT" && userReviews[songId]) {
+      let reviewId = null;
+      if (hasExistingReview && userReviews[songId]) {
         const existingReview = userReviews[songId].find(
           (review) => review.userId === user.id
         );
         if (existingReview) {
-          endpoint = `/api/reviews/${existingReview.id}`;
+          reviewId = existingReview.id;
         }
       }
 
-      const response: any =
-        method === "PUT"
-          ? await axios.put(endpoint, reviewData)
-          : await axios.post(endpoint, reviewData);
+      // Determine endpoint and method based on whether we're updating
+      const method = reviewId ? "PUT" : "POST";
+      const endpoint = reviewId ? `/reviews/${reviewId}` : "/reviews";
 
-      if (response.status !== 200 && response.status !== 201) {
-        throw new Error("Failed to submit review");
-      }
+      console.log(`Submitting review: ${method} ${endpoint}`, reviewData);
 
-      // Refresh the reviews for this song
-      const queryParams = new URLSearchParams({
-        songId: songId.toString(),
-      });
+      const options = {
+        ...getAuthHeader(),
+        method,
+        body: JSON.stringify(reviewData),
+      };
 
-      if (filters.groupId !== "all") {
-        queryParams.append("groupId", filters.groupId);
-      }
+      // Make the API request
+      const response = await fetchWrapper(endpoint, options);
+      console.log("Review submission response:", response);
 
-      const reviewsResponse: any = await axios.get(
-        `/api/reviews?${queryParams.toString()}`
-      );
-      setUserReviews({
-        ...userReviews,
-        [songId]: reviewsResponse.data.reviews || [],
-      });
+      // Update the local state with the new/updated review
+      if (response && response.id) {
+        // Call the onReviewSubmitted callback to refresh song stats
+        if (onReviewSubmitted) {
+          onReviewSubmitted();
+        }
 
-      // Call the onReviewSubmitted callback if provided
-      if (onReviewSubmitted) {
-        onReviewSubmitted();
+        // Refresh the reviews for this song
+        const queryParams = new URLSearchParams({
+          songId: songId.toString(),
+        });
+
+        if (filters.groupId !== "all") {
+          queryParams.append("groupId", filters.groupId);
+        }
+
+        const reviewsResponse = await fetchWrapper(
+          `/reviews/song?${queryParams.toString()}`,
+          getAuthHeader()
+        );
+
+        setUserReviews({
+          ...userReviews,
+          [songId]: reviewsResponse.reviews || [],
+        });
       }
     } catch (err) {
       console.error("Error submitting review:", err);
@@ -260,7 +313,7 @@ const ReviewsTable = ({
 
                 <td className="whitespace-nowrap px-4 py-4 text-sm text-gray-700 text-right">
                   {isAuthenticated ? (
-                    <div className="flex justify-end">
+                    <div className="flex justify-end items-center">
                       <Rating
                         onClick={(rate) => handleRatingChange(song.id, rate)}
                         initialValue={(song.userRating || 0) / 2}
@@ -269,6 +322,15 @@ const ReviewsTable = ({
                         iconsCount={5}
                         transition
                       />
+                      <span className="ml-2 text-gray-700">
+                        {(currentRatings[song.id] !== undefined
+                          ? currentRatings[song.id]
+                          : song.userRating !== undefined &&
+                            song.userRating !== null
+                          ? song.userRating
+                          : 0
+                        ).toFixed(1)}
+                      </span>
                     </div>
                   ) : (
                     song.userRating?.toFixed(1) || "-"
@@ -368,7 +430,8 @@ const ReviewsTable = ({
                             >
                               {submitting[song.id]
                                 ? "Submitting..."
-                                : song.userRating
+                                : song.userRating !== undefined &&
+                                  song.userRating !== null
                                 ? "Update Review"
                                 : "Submit Review"}
                             </button>
