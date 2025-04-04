@@ -46,3 +46,10 @@ export interface FiltersState {
   userId: string;
   showUserOnly: boolean;
 }
+
+export interface SongStatsProps {
+  albumId: number;
+  albumTitle: string;
+  userId?: string;
+  groups: Group[];
+}

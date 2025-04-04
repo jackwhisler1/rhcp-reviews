@@ -4,6 +4,7 @@ import {
   deleteReviewController,
   getReviewsController,
   getSongReviewsController,
+  getUserReviewForSongController,
   getUserSongReviewsController,
   updateReviewController,
 } from "../controllers/review.controller.js";
@@ -22,6 +23,9 @@ router.get("/song", getSongReviewsController);
 
 // Get reviews for specific songs by a user
 router.get("/user/songs", getUserSongReviewsController);
+
+// Get a specific user's review for a song
+router.get("/user/:userId/song/:songId", getUserReviewForSongController);
 
 // Update a review (requires authentication)
 router.put("/:id", authenticate, updateReviewController);

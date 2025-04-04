@@ -4,7 +4,11 @@ import { FiltersState, SongStat } from "../types/rhcp-types";
 import { fetchWrapper } from "../services/api";
 import { useAuth } from "../context/AuthContext";
 
-export const useAlbumStats = (albumId: number, filters: FiltersState) => {
+export const useAlbumStats = (
+  albumId: number,
+  filters: FiltersState,
+  reviewUpdateCount = 0
+) => {
   const [stats, setStats] = useState<SongStat[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -92,16 +96,11 @@ export const useAlbumStats = (albumId: number, filters: FiltersState) => {
     } finally {
       setLoading(false);
     }
-  }, [albumId, filters, user, isAuthenticated]);
-
-  // Function to manually trigger a refresh
-  const refreshStats = useCallback(() => {
-    setRefreshTrigger((prev) => prev + 1);
-  }, []);
+  }, [albumId, filters]);
 
   useEffect(() => {
     if (albumId) fetchStats();
-  }, [albumId, filters, fetchStats, refreshTrigger]);
+  }, [albumId, filters, fetchStats, reviewUpdateCount]);
 
-  return { stats, loading, error, refreshStats };
+  return { stats, loading, error, refreshStats: fetchStats };
 };

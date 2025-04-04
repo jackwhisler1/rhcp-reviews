@@ -1,5 +1,10 @@
-import { useState } from "react";
-import { FiltersState, Group } from "../../types/rhcp-types";
+import { useState, useCallback, useRef } from "react";
+import {
+  FiltersState,
+  Group,
+  SongStat,
+  SongStatsProps,
+} from "../../types/rhcp-types";
 import ErrorMessage from "../common/ErrorMessage";
 import LoadingSpinner from "../common/LoadingSpinner";
 import ReviewsTable from "./ReviewsTable";
@@ -9,13 +14,6 @@ import { useAlbumStats } from "../../hooks/useAlbumStats";
 import { useGroupMembers } from "../../hooks/useGroupMembers";
 import { useAuth } from "../../context/AuthContext";
 
-interface SongStatsProps {
-  albumId: number;
-  albumTitle: string;
-  userId?: string;
-  groups: Group[];
-}
-
 const SongStats = ({
   albumId,
   albumTitle,
@@ -24,74 +22,39 @@ const SongStats = ({
 }: SongStatsProps) => {
   const { user } = useAuth();
   const [filters, setFilters] = useState<FiltersState>({
-    groupId: "all", // Always start with public view
+    groupId: "all",
     userId: userId || "all",
     showUserOnly: false,
   });
 
-  const handleReviewSubmitted = () => {
-    refreshStats();
-  };
+  // Use a ref for the stable key
+  const tableKey = useRef("reviews-table");
+  const chartKey = useRef("chart-component");
+
+  // Instead of refreshing the whole stats, we'll do a targeted update
+  const [reviewUpdateCount, setReviewUpdateCount] = useState(0);
 
   const { stats, loading, error, refreshStats } = useAlbumStats(
     albumId,
-    filters
+    filters,
+    reviewUpdateCount // Pass this to useAlbumStats to trigger refresh
   );
 
   const { members, loading: membersLoading } = useGroupMembers(filters.groupId);
 
-  const handleFilterChange = (newFilters: Partial<FiltersState>) => {
-    setFilters((prev) => ({ ...prev, ...newFilters }));
-  };
+  // This function only increments the counter to trigger a refresh
+  const handleReviewSubmitted = useCallback(() => {
+    setReviewUpdateCount((prev) => prev + 1);
+  }, []);
 
-  if (loading) return <LoadingSpinner />;
+  const handleFilterChange = useCallback(
+    (newFilters: Partial<FiltersState>) => {
+      setFilters((prev) => ({ ...prev, ...newFilters }));
+    },
+    []
+  );
 
-  // Show error if there is one
-  if (error) {
-    // If it's a forbidden error for group access, show a login prompt
-    if (error.includes("Forbidden") && filters.groupId !== "all") {
-      return (
-        <div className="song-stats-container my-4 p-6 bg-white rounded-lg shadow-md">
-          <Filters
-            groups={groups}
-            members={members}
-            filters={filters}
-            loadingMembers={membersLoading}
-            onFilterChange={handleFilterChange}
-          />
-
-          <div className="my-6 p-4 bg-yellow-50 border border-yellow-400 rounded-lg">
-            <h3 className="text-lg font-medium text-yellow-800 mb-2">
-              Group Access Required
-            </h3>
-            <p className="text-yellow-700 mb-4">
-              You need to be logged in and a member of this group to view these
-              ratings.
-            </p>
-            <div className="flex justify-center">
-              <a
-                href="/login"
-                className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
-              >
-                Log In
-              </a>
-              <button
-                onClick={() =>
-                  setFilters((prev) => ({ ...prev, groupId: "all" }))
-                }
-                className="ml-4 inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
-              >
-                View Public Ratings
-              </button>
-            </div>
-          </div>
-        </div>
-      );
-    }
-
-    // For other errors, show the standard error message
-    return <ErrorMessage message={error} />;
-  }
+  // Rest of your component...
 
   return (
     <div className="song-stats-container my-4 p-6 bg-white rounded-lg shadow-md">
@@ -104,16 +67,18 @@ const SongStats = ({
       />
 
       <ChartComponent
+        key={chartKey.current}
         albumTitle={albumTitle}
         songStats={stats}
         filters={filters}
       />
 
       <ReviewsTable
+        key={tableKey.current}
         songStats={stats}
         filters={filters}
         albumId={albumId}
-        onReviewSubmitted={refreshStats}
+        onReviewSubmitted={handleReviewSubmitted}
       />
     </div>
   );

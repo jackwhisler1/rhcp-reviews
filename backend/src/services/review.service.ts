@@ -270,3 +270,31 @@ export const getUserSongReviewsService = async (
     total: reviews.length,
   };
 };
+
+export const getUserReviewForSongService = async (
+  userId: number,
+  songId: number
+) => {
+  if (!userId || !songId) {
+    return { review: null };
+  }
+
+  const review = await prisma.review.findFirst({
+    where: {
+      userId,
+      songId,
+    },
+    select: {
+      id: true,
+      songId: true,
+      rating: true,
+      content: true,
+      createdAt: true,
+      userId: true,
+    },
+  });
+
+  return {
+    review,
+  };
+};

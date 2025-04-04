@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import { SongStat, FiltersState, UserReview } from "../../types/rhcp-types";
 import { Rating } from "react-simple-star-rating";
 import { useAuth } from "../../context/AuthContext";
@@ -11,6 +11,7 @@ interface TableProps {
   onReviewSubmitted?: () => void;
 }
 
+// This is a completely different approach that focuses on stability over structure
 const ReviewsTable = ({
   songStats,
   filters,
@@ -19,16 +20,19 @@ const ReviewsTable = ({
 }: TableProps) => {
   const isGroupView = filters.groupId !== "all";
   const isUserView = filters.userId !== "all" || filters.showUserOnly;
-  const { user, loading: authLoading } = useAuth();
+  const { user } = useAuth();
   const isAuthenticated = !!user;
 
+  // Keep all state in refs when possible to minimize re-renders
+  const expandedSongIdRef = useRef<number | null>(null);
   const [expandedSongId, setExpandedSongId] = useState<number | null>(null);
-  const [userReviews, setUserReviews] = useState<{
-    [key: number]: UserReview[];
-  }>({});
-  const [reviewsLoading, setReviewsLoading] = useState<{
+
+  const userReviewsRef = useRef<{ [key: number]: UserReview[] }>({});
+  const [loadingReviews, setLoadingReviews] = useState<{
     [key: number]: boolean;
   }>({});
+
+  // These states need to be reactive for UI but we'll update carefully
   const [currentRatings, setCurrentRatings] = useState<{
     [key: number]: number;
   }>({});
@@ -36,43 +40,33 @@ const ReviewsTable = ({
     [key: number]: string;
   }>({});
   const [submitting, setSubmitting] = useState<{ [key: number]: boolean }>({});
+  const [successMessages, setSuccessMessages] = useState<{
+    [key: number]: string;
+  }>({});
+  const [editingComments, setEditingComments] = useState<{
+    [key: number]: boolean;
+  }>({});
   const [error, setError] = useState<string | null>(null);
-  useEffect(() => {
-    const initialRatings: { [key: number]: number } = {};
 
+  // Debounce timeout references
+  const commentTimeouts = useRef<{ [key: number]: NodeJS.Timeout }>({});
+
+  // Initialize ratings once from songStats
+  useEffect(() => {
+    const ratings: { [key: number]: number } = {};
     songStats.forEach((song) => {
       if (song.userRating !== undefined && song.userRating !== null) {
-        initialRatings[song.id] = song.userRating;
+        ratings[song.id] = song.userRating;
       }
     });
 
-    if (Object.keys(initialRatings).length > 0) {
-      setCurrentRatings((prev) => ({
-        ...prev,
-        ...initialRatings,
-      }));
+    if (Object.keys(ratings).length > 0) {
+      setCurrentRatings(ratings);
     }
-  }, [songStats]);
+  }, []);
 
-  // Update currentRatings when songStats change (to reflect updated ratings)
-  useEffect(() => {
-    const newRatings = { ...currentRatings };
-    let hasChanges = false;
-
-    songStats.forEach((song) => {
-      if (song.userRating && song.userRating !== currentRatings[song.id]) {
-        newRatings[song.id] = song.userRating;
-        hasChanges = true;
-      }
-    });
-
-    if (hasChanges) {
-      setCurrentRatings(newRatings);
-    }
-  }, [songStats]);
-
-  // Helper function to get auth headers
-  const getAuthHeader = () => {
+  // Get auth headers helper
+  const getAuthHeader = useCallback(() => {
     const headers: Record<string, string> = {
       "Content-Type": "application/json",
     };
@@ -82,85 +76,127 @@ const ReviewsTable = ({
     }
 
     return { headers };
-  };
+  }, [user]);
 
-  const handleExpand = async (songId: number) => {
-    if (expandedSongId === songId) {
-      setExpandedSongId(null);
-      return;
-    }
+  // Handle expanding/collapsing reviews
+  const handleExpand = useCallback(
+    async (songId: number) => {
+      if (expandedSongIdRef.current === songId) {
+        expandedSongIdRef.current = null;
+        setExpandedSongId(null);
+        return;
+      }
 
-    setExpandedSongId(songId);
+      expandedSongIdRef.current = songId;
+      setExpandedSongId(songId);
 
-    if (!userReviews[songId]) {
-      setReviewsLoading({ ...reviewsLoading, [songId]: true });
-      try {
-        const queryParams = new URLSearchParams({
-          songId: songId.toString(),
-        });
+      if (!userReviewsRef.current[songId]) {
+        setLoadingReviews((prev) => ({ ...prev, [songId]: true }));
 
-        if (filters.groupId !== "all") {
-          queryParams.append("groupId", filters.groupId);
-        }
+        try {
+          const queryParams = new URLSearchParams({
+            songId: songId.toString(),
+          });
 
-        const response = await fetchWrapper(
-          `/reviews/song?${queryParams.toString()}`,
-          getAuthHeader()
-        );
+          if (filters.groupId !== "all") {
+            queryParams.append("groupId", filters.groupId);
+          }
 
-        setUserReviews({
-          ...userReviews,
-          [songId]: response.reviews || [],
-        });
-
-        // Find user's review if it exists
-        if (isAuthenticated && user) {
-          const userReview = response.reviews?.find(
-            (review: UserReview) => review.userId === user.id
+          const response = await fetchWrapper(
+            `/reviews/song?${queryParams.toString()}`,
+            getAuthHeader()
           );
 
-          if (userReview) {
-            setCurrentRatings({
-              ...currentRatings,
-              [songId]: userReview.rating,
-            });
-            setReviewContents({
-              ...reviewContents,
-              [songId]: userReview.content || "",
-            });
+          userReviewsRef.current[songId] = response.reviews || [];
+
+          // Force update so the component rerenders with reviews
+          setLoadingReviews((prev) => ({ ...prev, [songId]: false }));
+
+          // Find user's review if it exists
+          if (isAuthenticated && user) {
+            const userReview = response.reviews?.find(
+              (review: UserReview) => review.userId === user.id
+            );
+
+            if (userReview) {
+              setCurrentRatings((prev) => ({
+                ...prev,
+                [songId]: userReview.rating,
+              }));
+              setReviewContents((prev) => ({
+                ...prev,
+                [songId]: userReview.content || "",
+              }));
+            }
           }
+        } catch (err) {
+          console.error("Error fetching reviews:", err);
+          setError("Failed to load reviews");
+          setLoadingReviews((prev) => ({ ...prev, [songId]: false }));
         }
-      } catch (err) {
-        console.error("Error fetching reviews:", err);
-        setError("Failed to load reviews");
-      } finally {
-        setReviewsLoading({ ...reviewsLoading, [songId]: false });
       }
-    }
-  };
+    },
+    [filters, isAuthenticated, user, getAuthHeader]
+  );
 
-  const handleRatingChange = (songId: number, rating: number) => {
-    setCurrentRatings({ ...currentRatings, [songId]: rating * 2 }); // Convert 5-star scale to 10-point scale
-  };
+  // Rating change handler - CRITICAL for stability
+  const handleRatingChange = useCallback(
+    (songId: number, rating: number) => {
+      const newRating = rating * 2; // Convert 5-star scale to 10-point scale
 
-  const handleContentChange = (songId: number, content: string) => {
-    setReviewContents({ ...reviewContents, [songId]: content });
-  };
+      // Update state without causing a complete re-render
+      setCurrentRatings((prev) => {
+        const updatedRatings = { ...prev };
+        updatedRatings[songId] = newRating;
+        return updatedRatings;
+      });
 
-  const handleSubmitReview = async (songId: number) => {
+      // Submit the review in the background
+      submitReview(songId, newRating, reviewContents[songId] || "");
+    },
+    [reviewContents]
+  );
+
+  // Safe content change handler
+  const handleContentChange = useCallback(
+    (songId: number, content: string) => {
+      setReviewContents((prev) => ({ ...prev, [songId]: content }));
+      setEditingComments((prev) => ({ ...prev, [songId]: true }));
+
+      // Clear any existing timeout
+      if (commentTimeouts.current[songId]) {
+        clearTimeout(commentTimeouts.current[songId]);
+      }
+
+      // Set a new timeout to submit after 1.5 seconds of inactivity
+      commentTimeouts.current[songId] = setTimeout(() => {
+        const rating = currentRatings[songId];
+        if (rating) {
+          submitReview(songId, rating, content);
+          setEditingComments((prev) => ({ ...prev, [songId]: false }));
+        }
+      }, 1500);
+    },
+    [currentRatings]
+  );
+
+  const submitReview = async (
+    songId: number,
+    rating: number,
+    content: string
+  ) => {
     if (!isAuthenticated || !user) {
       setError("You must be logged in to submit a review");
       return;
     }
 
-    setSubmitting({ ...submitting, [songId]: true });
+    setSubmitting((prev) => ({ ...prev, [songId]: true }));
 
     try {
-      // Find this song in the songStats to check if user already has a review
-      const songData = songStats.find((song) => song.id === songId);
+      // Find if user already has a review
+      const songData = songStats.find((s) => s.id === songId);
       const hasExistingReview =
-        songData?.userRating !== undefined && songData?.userRating !== null;
-      const rating = currentRatings[songId] || 0;
+        songData?.userRating !== undefined && songData.userRating !== null;
 
       if (rating === 0) {
         throw new Error("Please provide a rating");
@@ -169,26 +205,68 @@ const ReviewsTable = ({
       const reviewData = {
         songId,
         rating,
-        content: reviewContents[songId] || "",
+        content: content || "",
         groupId: filters.groupId !== "all" ? parseInt(filters.groupId) : null,
       };
 
-      // Find the review ID if we're updating
+      // Find review ID if updating
       let reviewId = null;
-      if (hasExistingReview && userReviews[songId]) {
-        const existingReview = userReviews[songId].find(
-          (review) => review.userId === user.id
-        );
-        if (existingReview) {
-          reviewId = existingReview.id;
+
+      // If we have an existing review based on userRating
+      if (hasExistingReview) {
+        // First check our cached reviews
+        if (userReviewsRef.current[songId]) {
+          const cachedReview = userReviewsRef.current[songId].find(
+            (review) => review.userId === user.id
+          );
+          if (cachedReview) {
+            reviewId = cachedReview.id;
+          }
+        }
+
+        // If not found in cache, fetch it directly
+        if (!reviewId) {
+          try {
+            console.log("Fetching review ID for:", songId);
+
+            const response = await fetchWrapper(
+              `/reviews/user/${user.id}/song/${songId}`,
+              getAuthHeader()
+            );
+
+            if (response && response.review) {
+              reviewId = response.review.id;
+              console.log("Found review ID:", reviewId);
+
+              // Update our cache with this review
+              if (!userReviewsRef.current[songId]) {
+                userReviewsRef.current[songId] = [];
+              }
+
+              // Only add if not already in the cache
+              const exists = userReviewsRef.current[songId].some(
+                (r) => r.id === response.review.id
+              );
+              if (!exists) {
+                userReviewsRef.current[songId].push(response.review);
+              }
+            }
+          } catch (err) {
+            console.error("Error fetching review ID:", err);
+            // Continue without the review ID - we'll create a new one
+          }
         }
       }
 
-      // Determine endpoint and method based on whether we're updating
+      // Determine endpoint and method
       const method = reviewId ? "PUT" : "POST";
       const endpoint = reviewId ? `/reviews/${reviewId}` : "/reviews";
 
-      console.log(`Submitting review: ${method} ${endpoint}`, reviewData);
+      console.log(`Submitting review: ${method} ${endpoint}`, {
+        songId,
+        reviewId,
+        hasExistingReview,
+      });
 
       const options = {
         ...getAuthHeader(),
@@ -198,42 +276,76 @@ const ReviewsTable = ({
 
       // Make the API request
       const response = await fetchWrapper(endpoint, options);
-      console.log("Review submission response:", response);
 
-      // Update the local state with the new/updated review
+      // Show success message
+      setSuccessMessages((prev) => ({
+        ...prev,
+        [songId]: hasExistingReview ? "Review updated!" : "Review submitted!",
+      }));
+
+      // Clear success message after 2 seconds
+      setTimeout(() => {
+        setSuccessMessages((prev) => {
+          const newMessages = { ...prev };
+          delete newMessages[songId];
+          return newMessages;
+        });
+      }, 2000);
+
+      // Maybe refresh stats or reviews if expanded
       if (response && response.id) {
-        // Call the onReviewSubmitted callback to refresh song stats
+        // Update our cache with this new/updated review
+        if (response.id && !reviewId) {
+          // This was a new review - store it
+          if (!userReviewsRef.current[songId]) {
+            userReviewsRef.current[songId] = [];
+          }
+
+          // Add or update the review in our cache
+          const reviewIndex = userReviewsRef.current[songId].findIndex(
+            (r) => r.id === response.id
+          );
+          if (reviewIndex >= 0) {
+            userReviewsRef.current[songId][reviewIndex] = response;
+          } else {
+            userReviewsRef.current[songId].push(response);
+          }
+        }
+
+        // Call the callback to refresh stats
         if (onReviewSubmitted) {
           onReviewSubmitted();
         }
 
-        // Refresh the reviews for this song
-        const queryParams = new URLSearchParams({
-          songId: songId.toString(),
-        });
+        // Only refresh expanded reviews
+        if (expandedSongIdRef.current === songId) {
+          const queryParams = new URLSearchParams({
+            songId: songId.toString(),
+          });
 
-        if (filters.groupId !== "all") {
-          queryParams.append("groupId", filters.groupId);
+          if (filters.groupId !== "all") {
+            queryParams.append("groupId", filters.groupId);
+          }
+
+          const reviewsResponse = await fetchWrapper(
+            `/reviews/song?${queryParams.toString()}`,
+            getAuthHeader()
+          );
+
+          userReviewsRef.current[songId] = reviewsResponse.reviews || [];
+          // Force re-render for the reviews list
+          setSubmitting((prev) => ({ ...prev }));
         }
-
-        const reviewsResponse = await fetchWrapper(
-          `/reviews/song?${queryParams.toString()}`,
-          getAuthHeader()
-        );
-
-        setUserReviews({
-          ...userReviews,
-          [songId]: reviewsResponse.reviews || [],
-        });
       }
     } catch (err) {
       console.error("Error submitting review:", err);
       setError(err instanceof Error ? err.message : "An error occurred");
     } finally {
-      setSubmitting({ ...submitting, [songId]: false });
+      setSubmitting((prev) => ({ ...prev, [songId]: false }));
     }
   };
 
+  // Helper for date formatting
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
     return new Intl.DateTimeFormat("en-US", {
@@ -260,27 +372,32 @@ const ReviewsTable = ({
       <table className="min-w-full divide-y divide-gray-200">
         <thead className="bg-gray-50">
           <tr>
-            <th className="px-4 py-3.5 text-left text-sm font-semibold text-gray-900">
+            <th className="px-3 py-3 text-left text-xs font-semibold text-gray-900">
               #
             </th>
-            <th className="px-4 py-3.5 text-left text-sm font-semibold text-gray-900">
+            <th className="px-3 py-3 text-left text-xs font-semibold text-gray-900">
               Song
             </th>
             {!isUserView && (
-              <th className="px-4 py-3.5 text-right text-sm font-semibold text-gray-900">
+              <th className="px-3 py-3 text-right text-xs font-semibold text-gray-900 w-24">
                 Public Avg
               </th>
             )}
             {isGroupView && (
-              <th className="px-4 py-3.5 text-right text-sm font-semibold text-gray-900">
+              <th className="px-3 py-3 text-right text-xs font-semibold text-gray-900 w-24">
                 Group Avg
               </th>
             )}
-            <th className="px-4 py-3.5 text-right text-sm font-semibold text-gray-900">
-              {isUserView ? "Your Rating" : "Selected User"}
+            <th className="px-3 py-3 text-center text-xs font-semibold text-gray-900 w-32">
+              Your Rating
             </th>
-            <th className="px-4 py-3.5 text-right text-sm font-semibold text-gray-900">
-              Actions
+            {isAuthenticated && (
+              <th className="px-3 py-3 text-left text-xs font-semibold text-gray-900">
+                Your Comment
+              </th>
+            )}
+            <th className="px-3 py-3 text-right text-xs font-semibold text-gray-900 w-32">
+              All Reviews
             </th>
           </tr>
         </thead>
@@ -292,54 +409,83 @@ const ReviewsTable = ({
                   expandedSongId === song.id ? "bg-gray-50" : ""
                 }`}
               >
-                <td className="whitespace-nowrap px-4 py-4 text-sm text-gray-700">
+                <td className="whitespace-nowrap px-3 py-2 text-sm text-gray-700">
                   {song.trackNumber}
                 </td>
-                <td className="whitespace-nowrap px-4 py-4 text-sm font-medium text-gray-900">
+                <td className="whitespace-nowrap px-3 py-2 text-sm font-medium text-gray-900">
                   {song.title}
                 </td>
 
                 {!isUserView && (
-                  <td className="whitespace-nowrap px-4 py-4 text-sm text-gray-700 text-right">
+                  <td className="whitespace-nowrap px-3 py-2 text-sm text-gray-700 text-right">
                     {song.averageRating.toFixed(1)}
                   </td>
                 )}
 
                 {isGroupView && (
-                  <td className="whitespace-nowrap px-4 py-4 text-sm text-gray-700 text-right">
+                  <td className="whitespace-nowrap px-3 py-2 text-sm text-gray-700 text-right">
                     {(song.groupAverage || 0).toFixed(1)}
                   </td>
                 )}
 
-                <td className="whitespace-nowrap px-4 py-4 text-sm text-gray-700 text-right">
+                <td className="whitespace-nowrap px-2 py-2 text-sm text-gray-700">
                   {isAuthenticated ? (
-                    <div className="flex justify-end items-center">
+                    <div className="flex items-center justify-center relative">
                       <Rating
                         onClick={(rate) => handleRatingChange(song.id, rate)}
-                        initialValue={(song.userRating || 0) / 2}
-                        size={20}
+                        initialValue={
+                          (currentRatings[song.id] || song.userRating || 0) / 2
+                        }
+                        key={`rating-${song.id}-${
+                          currentRatings[song.id] || song.userRating || 0
+                        }`}
+                        size={18}
                         allowFraction
                         iconsCount={5}
                         transition
                       />
-                      <span className="ml-2 text-gray-700">
-                        {(currentRatings[song.id] !== undefined
-                          ? currentRatings[song.id]
-                          : song.userRating !== undefined &&
-                            song.userRating !== null
-                          ? song.userRating
-                          : 0
-                        ).toFixed(1)}
-                      </span>
+                      {submitting[song.id] && (
+                        <div className="absolute -right-6">
+                          <div className="animate-spin h-4 w-4 border-2 border-indigo-500 rounded-full border-t-transparent"></div>
+                        </div>
+                      )}
+                      {successMessages[song.id] && (
+                        <div className="absolute right-0 -bottom-5 text-xs text-green-600 whitespace-nowrap">
+                          {successMessages[song.id]}
+                        </div>
+                      )}
                     </div>
                   ) : (
-                    song.userRating?.toFixed(1) || "-"
+                    <div className="text-center">
+                      {song.userRating?.toFixed(1) || "-"}
+                    </div>
                   )}
                 </td>
 
-                <td className="whitespace-nowrap px-4 py-4 text-right text-sm font-medium">
+                {isAuthenticated && (
+                  <td className="px-3 py-2 text-sm">
+                    <div className="relative">
+                      <input
+                        type="text"
+                        value={reviewContents[song.id] || ""}
+                        onChange={(e) =>
+                          handleContentChange(song.id, e.target.value)
+                        }
+                        placeholder="Add comment (autosaves)"
+                        className="w-full border-gray-300 rounded-sm text-sm p-1 focus:border-indigo-500 focus:ring-indigo-500"
+                      />
+                      {editingComments[song.id] && (
+                        <div className="absolute right-2 top-1/2 transform -translate-y-1/2">
+                          <div className="animate-pulse h-2 w-2 rounded-full bg-indigo-500"></div>
+                        </div>
+                      )}
+                    </div>
+                  </td>
+                )}
+
+                <td className="whitespace-nowrap px-3 py-2 text-right text-sm font-medium">
                   <button
-                    className={`inline-flex items-center rounded-md px-3 py-2 text-sm font-semibold shadow-sm ${
+                    className={`inline-flex items-center rounded-md px-2 py-1 text-xs font-semibold shadow-sm ${
                       expandedSongId === song.id
                         ? "bg-indigo-100 text-indigo-700"
                         : "bg-white-smoke"
@@ -356,101 +502,23 @@ const ReviewsTable = ({
               {/* Expanded review section */}
               {expandedSongId === song.id && (
                 <tr>
-                  <td colSpan={6} className="px-4 py-4 bg-gray-50">
+                  <td
+                    colSpan={isAuthenticated ? 7 : 6}
+                    className="px-4 py-4 bg-gray-50"
+                  >
                     <div className="border-t border-b border-gray-200 py-4">
-                      {/* User review input section */}
-                      {isAuthenticated && (
-                        <div className="bg-white p-4 rounded-lg shadow-sm mb-4">
-                          <h4 className="text-lg font-medium text-gray-900 mb-3">
-                            Your Review
-                          </h4>
-
-                          <div className="mb-3">
-                            <label className="block text-sm font-medium text-gray-700 mb-1">
-                              Rating
-                            </label>
-                            <div className="flex items-center">
-                              <Rating
-                                onClick={(rate) =>
-                                  handleRatingChange(song.id, rate)
-                                }
-                                initialValue={
-                                  (currentRatings[song.id] ||
-                                    song.userRating ||
-                                    0) / 2
-                                }
-                                size={24}
-                                allowFraction
-                                iconsCount={5}
-                                transition
-                                fillColorArray={[
-                                  "#f17a45", // 1-2 stars
-                                  "#f19745", // 2-3 stars
-                                  "#f1a545", // 3-4 stars
-                                  "#f1b345", // 4-5 stars
-                                  "#f1d045", // 5 stars
-                                ]}
-                              />
-                              <span className="ml-2 text-gray-700">
-                                {currentRatings[song.id]?.toFixed(1) ||
-                                  song.userRating?.toFixed(1) ||
-                                  "0.0"}
-                                /10
-                              </span>
-                            </div>
-                          </div>
-
-                          <div className="mb-3">
-                            <label className="block text-sm font-medium text-gray-700 mb-1">
-                              Comments (Optional)
-                            </label>
-                            <textarea
-                              className="shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 rounded-md"
-                              rows={3}
-                              value={reviewContents[song.id] || ""}
-                              onChange={(e) =>
-                                handleContentChange(song.id, e.target.value)
-                              }
-                              placeholder="Share your thoughts about this song..."
-                            ></textarea>
-                          </div>
-
-                          <div className="flex justify-end">
-                            <button
-                              className={`inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 ${
-                                submitting[song.id]
-                                  ? "opacity-75 cursor-not-allowed"
-                                  : ""
-                              }`}
-                              onClick={() => handleSubmitReview(song.id)}
-                              disabled={
-                                submitting[song.id] ||
-                                currentRatings[song.id] === 0
-                              }
-                            >
-                              {submitting[song.id]
-                                ? "Submitting..."
-                                : song.userRating !== undefined &&
-                                  song.userRating !== null
-                                ? "Update Review"
-                                : "Submit Review"}
-                            </button>
-                          </div>
-                        </div>
-                      )}
-
                       {/* Reviews list */}
                       <h4 className="text-lg font-medium text-gray-900 mb-3">
                         All Reviews ({song.reviewCount})
                       </h4>
 
-                      {reviewsLoading[song.id] ? (
+                      {loadingReviews[song.id] ? (
                         <div className="flex justify-center py-4">
                           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
                         </div>
-                      ) : userReviews[song.id]?.length > 0 ? (
+                      ) : userReviewsRef.current[song.id]?.length > 0 ? (
                         <div className="space-y-4">
-                          {userReviews[song.id].map((review) => (
+                          {userReviewsRef.current[song.id].map((review) => (
                             <div
                               key={review.id}
                               className="bg-white p-3 rounded border border-gray-200"
@@ -524,4 +592,4 @@ const ReviewsTable = ({
   );
 };
 
-export default ReviewsTable;
+export default React.memo(ReviewsTable);

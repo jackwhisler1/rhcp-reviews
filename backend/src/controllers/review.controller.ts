@@ -4,6 +4,7 @@ import {
   deleteReviewService,
   getReviewsService,
   getSongReviewsService,
+  getUserReviewForSongService,
   getUserSongReviewsService,
   updateReviewService,
 } from "../services/review.service.js";
@@ -86,6 +87,25 @@ export const getUserSongReviewsController = asyncHandler(
     const result = await getUserSongReviewsService(
       parseInt(userId as string),
       parsedSongIds
+    );
+
+    res.json(result);
+  }
+);
+
+export const getUserReviewForSongController = asyncHandler(
+  async (req: Request, res: Response) => {
+    const { userId, songId } = req.params;
+
+    if (!userId || !songId) {
+      return res
+        .status(400)
+        .json({ error: "User ID and Song ID are required" });
+    }
+
+    const result = await getUserReviewForSongService(
+      parseInt(userId),
+      parseInt(songId)
     );
 
     res.json(result);

@@ -1,6 +1,7 @@
 import ApexChart from "react-apexcharts";
 import { SongStat, FiltersState } from "../../types/rhcp-types";
 import { ApexOptions } from "apexcharts";
+import { memo } from "react";
 
 interface ChartProps {
   albumTitle: string;
@@ -164,4 +165,4 @@ const ChartComponent = ({ albumTitle, songStats, filters }: ChartProps) => {
   );
 };
 
-export default ChartComponent;
+export default memo(ChartComponent);
