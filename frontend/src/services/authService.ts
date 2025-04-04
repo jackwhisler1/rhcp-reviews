@@ -38,10 +38,6 @@ export const login = async (email: string, password: string) => {
     password: sanitizedPassword,
   });
 
-  if (response.data.token) {
-    storeAuthData(response.data);
-  }
-
   return response;
 };
 

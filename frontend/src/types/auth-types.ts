@@ -19,6 +19,7 @@ export interface AuthContextType {
   isAuthenticated: boolean;
   setUser: React.Dispatch<React.SetStateAction<User | null>>;
   logout: () => void;
+  login: (userData: any) => void;
 }
 
 export interface AuthResponse {

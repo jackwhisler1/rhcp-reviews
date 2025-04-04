@@ -3,6 +3,7 @@ import {
   getCurrentUser,
   fetchCurrentUser,
   logout,
+  storeAuthData,
 } from "../services/authService";
 import { AuthContextType, User } from "../types/auth-types";
 
@@ -12,6 +13,7 @@ const AuthContext = createContext<AuthContextType>({
   isAuthenticated: false,
   setUser: () => {},
   logout: () => {},
+  login: () => {},
 });
 
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
@@ -20,15 +22,15 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   // Initialize auth state synchronously first
   useEffect(() => {
-    const initAuth = () => {
+    const initAuth = async () => {
       try {
-        console.log("Initial auth state check");
+        console.log("Auth initialization started");
         // First check session storage for cached user data
         const storedUser = getCurrentUser();
         console.log("Stored user from session storage:", storedUser);
 
         if (storedUser) {
-          // Important: Set user state immediately from storage
+          // Important: Keep the tokens when setting the user state
           setUser({
             id: storedUser.id,
             username: storedUser.username,
@@ -37,15 +39,39 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
             token: storedUser.token,
             refreshToken: storedUser.refreshToken,
           });
+
+          // Then try to fetch the latest user data from the server
+          try {
+            console.log("Fetching current user from API");
+            const freshUserData: User = await fetchCurrentUser();
+            console.log("Fresh user data from API:", freshUserData);
+
+            // Fix: Explicitly type and access properties instead of using spread
+            if (freshUserData && typeof freshUserData === "object") {
+              setUser((currentUser) => ({
+                id: freshUserData.id || storedUser.id,
+                username: freshUserData.username || storedUser.username,
+                email: freshUserData.email || storedUser.email,
+                image: freshUserData.image || storedUser.image,
+                // Keep the tokens from storage
+                token: storedUser.token,
+                refreshToken: storedUser.refreshToken,
+              }));
+            }
+          } catch (error) {
+            console.error("Error fetching current user:", error);
+            // Keep using the stored user data
+          }
+        } else {
+          console.log("No stored user found in session storage");
         }
       } catch (err) {
-        console.error("Initial auth state error:", err);
+        console.error("Auth initialization error:", err);
       } finally {
-        // Don't set loading false yet - wait for API check
+        setLoading(false);
       }
     };
 
-    // Run synchronous init immediately
     initAuth();
   }, []);
 
@@ -98,6 +124,43 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     setUser(null);
   };
 
+  const handleLogin = (userData: any) => {
+    console.log("Auth Context: handleLogin called with:", {
+      userId: userData.user?.id,
+      username: userData.user?.username,
+      hasToken: !!userData.token,
+      hasRefreshToken: !!userData.refreshToken,
+    });
+
+    try {
+      // Store auth data in storage
+      console.log("Auth Context: Storing auth data");
+      storeAuthData(userData);
+
+      // Double check that data was stored
+      const storedUser = getCurrentUser();
+      console.log("Auth Context: Verified stored user data:", {
+        userId: storedUser?.id,
+        username: storedUser?.username,
+        hasToken: !!storedUser?.token,
+      });
+
+      // Update state
+      console.log("Auth Context: Setting user state");
+      setUser({
+        id: userData.user.id,
+        username: userData.user.username,
+        email: userData.user.email,
+        image: userData.user.image,
+        token: userData.token,
+        refreshToken: userData.refreshToken,
+      });
+
+      console.log("Auth Context: User state should now be updated");
+    } catch (error) {
+      console.error("Auth Context: Error in handleLogin:", error);
+    }
+  };
   const isAuthenticated = !!user?.token;
 
   // Log auth state changes for debugging
@@ -118,6 +181,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         isAuthenticated,
         setUser,
         logout: handleLogout,
+        login: handleLogin,
       }}
     >
       {children}
