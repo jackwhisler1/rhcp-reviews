@@ -49,7 +49,13 @@ function setupMiddleware() {
     standardHeaders: true,
     legacyHeaders: false,
   });
-  app.use("/api/", apiLimiter);
+  const devApiLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000,
+    max: 9999,
+    standardHeaders: true,
+    legacyHeaders: false,
+  });
+  app.use("/api/", devApiLimiter);
 
   // Create uploads directory if it doesn't exist
   const uploadsDir = path.join(directory, "uploads");

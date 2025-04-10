@@ -1,7 +1,7 @@
-import { useState, useEffect, useCallback } from "react";
-import { Group } from "../types/rhcp-types";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { useAuth } from "../context/AuthContext";
-import { fetchUserGroups } from "../services/groupService"; // Correct import
+import { fetchUserGroups } from "../services/groupService";
+import { Group } from "../types/rhcp-types";
 
 export const useUserGroups = (userId?: number) => {
   const [groups, setGroups] = useState<Group[]>([]);
@@ -9,7 +9,10 @@ export const useUserGroups = (userId?: number) => {
   const [error, setError] = useState<string | null>(null);
   const { user } = useAuth();
 
-  const fetchGroups = useCallback(async () => {
+  // Store the last fetched userId to prevent redundant requests
+  const lastFetchedRef = useRef<number | null>(null);
+
+  useEffect(() => {
     // Skip if no userId provided and no logged-in user
     if (!userId && !user?.id) {
       setGroups([]);
@@ -26,38 +29,69 @@ export const useUserGroups = (userId?: number) => {
       return;
     }
 
-    try {
-      setLoading(true);
-      setError(null);
-
-      // Call the service function with the targetUserId
-      console.log(`Fetching groups for user ID: ${targetUserId}`);
-      const groupsData = await fetchUserGroups(targetUserId);
-
-      // Check if we got an array back
-      if (Array.isArray(groupsData)) {
-        setGroups(groupsData);
-      } else {
-        console.warn("Unexpected response format:", groupsData);
-        setGroups([]);
-      }
-    } catch (err: any) {
-      console.error("Error fetching user groups:", err);
-      setError("Unable to load groups at this time");
-      setGroups([]);
-    } finally {
-      setLoading(false);
+    // Skip if we already fetched data for this userId
+    if (lastFetchedRef.current === targetUserId) {
+      return;
     }
-  }, [userId, user?.id]);
 
-  useEffect(() => {
+    const fetchGroups = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+
+        // Call the service function with the targetUserId
+        console.log(`Fetching groups for user ID: ${targetUserId}`);
+        const groupsData = await fetchUserGroups(targetUserId);
+        lastFetchedRef.current = targetUserId;
+
+        // Check if we got an array back
+        if (Array.isArray(groupsData)) {
+          setGroups(groupsData);
+        } else {
+          console.warn("Unexpected response format:", groupsData);
+          setGroups([]);
+        }
+      } catch (err: any) {
+        console.error("Error fetching user groups:", err);
+        setError("Unable to load groups at this time");
+        setGroups([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
     fetchGroups();
-  }, [fetchGroups]);
+  }, [userId, user?.id]); // Simplified dependencies
 
   // Add a manual refresh function
-  const refreshGroups = () => {
-    fetchGroups();
-  };
+  const refreshGroups = useCallback(() => {
+    // Reset the lastFetchedRef to force a new fetch
+    lastFetchedRef.current = null;
+
+    // Skip if no userId provided and no logged-in user
+    if (!userId && !user?.id) return;
+
+    const targetUserId = userId || user?.id;
+    if (!targetUserId) return;
+
+    setLoading(true);
+    fetchUserGroups(targetUserId)
+      .then((groupsData) => {
+        if (Array.isArray(groupsData)) {
+          setGroups(groupsData);
+        } else {
+          setGroups([]);
+        }
+        lastFetchedRef.current = targetUserId;
+      })
+      .catch((err) => {
+        console.error("Error refreshing groups:", err);
+        setError("Unable to refresh groups at this time");
+      })
+      .finally(() => {
+        setLoading(false);
+      });
+  }, [userId, user?.id]);
 
   return { groups, loading, error, refreshGroups };
 };

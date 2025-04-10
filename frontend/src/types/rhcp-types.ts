@@ -13,6 +13,7 @@ export interface SongStat {
 export interface UserReview {
   id: number;
   userId: number;
+  songId: number;
   groupId?: number;
   author: { id: number; username: string; image?: string | null };
   rating: number;
