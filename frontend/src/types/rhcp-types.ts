@@ -14,7 +14,7 @@ export interface UserReview {
   id: number;
   userId: number;
   groupId?: number;
-  username: string;
+  author: { id: number; username: string; image?: string | null };
   rating: number;
   content: string;
   createdAt: string;

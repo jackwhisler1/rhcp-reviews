@@ -107,6 +107,7 @@ const ReviewsTable = ({
             getAuthHeader()
           );
 
+          console.log(userReviewsRef);
           userReviewsRef.current[songId] = response.reviews || [];
 
           // Force update so the component rerenders with reviews
@@ -528,13 +529,21 @@ const ReviewsTable = ({
                                   <div className="flex-shrink-0">
                                     <img
                                       className="h-8 w-8 rounded-full"
-                                      src={"/images/default-avatar.jpg"}
-                                      alt=""
+                                      src={
+                                        review.author?.image ||
+                                        "/images/default-user.png"
+                                      }
+                                      alt={review.author?.username || "User"}
+                                      onError={(e) => {
+                                        e.currentTarget.onerror = null;
+                                        e.currentTarget.src =
+                                          "/images/default-user.png";
+                                      }}
                                     />
                                   </div>
                                   <div className="ml-3">
                                     <p className="text-sm font-medium text-gray-900">
-                                      {review.username || "Anonymous"}
+                                      {review.author.username || "Anonymous"}
                                       {user && review.userId === user.id && (
                                         <span className="ml-2 text-xs font-normal text-gray-500">
                                           (You)
