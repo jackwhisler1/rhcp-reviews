@@ -1,5 +1,4 @@
-// Inside useAlbumStats.js
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { FiltersState, SongStat } from "../types/rhcp-types";
 import { fetchWrapper } from "../services/api";
 import { useAuth } from "../context/AuthContext";
@@ -12,95 +11,261 @@ export const useAlbumStats = (
   const [stats, setStats] = useState<SongStat[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [refreshTrigger, setRefreshTrigger] = useState(0);
   const { user } = useAuth();
   const isAuthenticated = !!user;
 
-  // Helper function to get auth headers, with option to skip auth
-  const getAuthHeader = (requireAuth = true) => {
+  // Use a ref to track the previous stats for better comparison
+  const prevStatsRef = useRef<SongStat[]>([]);
+
+  // Track local updates to user ratings that might not be reflected in the API yet
+  const pendingUserRatingsRef = useRef<{ [songId: number]: number }>({});
+
+  // Helper function to get auth headers
+  const getAuthHeader = useCallback(() => {
     const headers: Record<string, string> = {
       "Content-Type": "application/json",
     };
 
-    if (requireAuth && user?.token) {
+    if (user?.token) {
       headers["Authorization"] = `Bearer ${user.token}`;
     }
 
     return { headers };
-  };
+  }, [user]);
 
-  // Use useCallback to create a stable function reference
+  // Function to merge new stats with previous userRatings when appropriate
+  const mergeWithPrevStats = useCallback((newStats: SongStat[]) => {
+    // If we don't have previous stats, just use the new ones with any pending ratings
+    if (!prevStatsRef.current.length) {
+      return newStats.map((song) => {
+        // Check if we have a pending rating for this song
+        if (pendingUserRatingsRef.current[song.id]) {
+          return {
+            ...song,
+            userRating: pendingUserRatingsRef.current[song.id],
+          };
+        }
+        return song;
+      });
+    }
+
+    // Create a map of previous stats by song ID for easy lookup
+    const prevStatsBySongId = new Map(
+      prevStatsRef.current.map((song) => [song.id, song])
+    );
+
+    // Merge new stats with previous userRatings and pending ratings
+    return newStats.map((newSong) => {
+      const prevSong = prevStatsBySongId.get(newSong.id);
+      const pendingRating = pendingUserRatingsRef.current[newSong.id];
+
+      // Start with the new song data
+      let mergedSong = { ...newSong };
+
+      // If we have a pending rating, that takes highest priority
+      if (pendingRating !== undefined) {
+        mergedSong.userRating = pendingRating;
+      }
+      // If the new song has a userRating, use that (API responded with our rating)
+      else if (
+        newSong.userRating !== undefined &&
+        newSong.userRating !== null
+      ) {
+        mergedSong.userRating = newSong.userRating;
+      }
+      // If the new song doesn't have a userRating but previous did, preserve it
+      else if (
+        prevSong &&
+        prevSong.userRating !== undefined &&
+        prevSong.userRating !== null
+      ) {
+        mergedSong.userRating = prevSong.userRating;
+      }
+
+      return mergedSong;
+    });
+  }, []);
+
+  // Method to manually set a user rating locally
+  // This can be called when a user submits a rating but before the API refresh
+  const setUserRating = useCallback((songId: number, rating: number) => {
+    console.log(`Setting local user rating for song ${songId} to ${rating}`);
+
+    // Update the pending ratings ref
+    pendingUserRatingsRef.current = {
+      ...pendingUserRatingsRef.current,
+      [songId]: rating,
+    };
+
+    // Also update the current stats state immediately for UI feedback
+    setStats((currentStats) =>
+      currentStats.map((song) =>
+        song.id === songId ? { ...song, userRating: rating } : song
+      )
+    );
+  }, []);
+
+  // Fetch album stats
   const fetchStats = useCallback(async () => {
+    if (!albumId) return;
+
     try {
       setLoading(true);
-      setError(null);
 
       // Build query params for album stats
       const statsParams = new URLSearchParams();
+
+      // Add group filter if applicable
       if (filters.groupId !== "all") {
         statsParams.append("groupId", filters.groupId);
       }
-      if (filters.showUserOnly && filters.userId !== "all") {
+
+      // Add user filter if applicable
+      if (filters.userId !== "all" && filters.userId) {
+        statsParams.append("userId", filters.userId);
+      }
+
+      // Special filter for showing only the current user's ratings
+      if (filters.showUserOnly && isAuthenticated && user?.id) {
         statsParams.append("userFilter", "true");
       }
 
-      // Fetch basic stats
-      const data = await fetchWrapper(
-        `/albums/${albumId}/songs/stats?${statsParams.toString()}`,
-        getAuthHeader(false)
-      );
+      const apiUrl = `/albums/${albumId}/songs/stats`;
+      const queryString = statsParams.toString();
+      const fullUrl = queryString ? `${apiUrl}?${queryString}` : apiUrl;
 
-      // If user is authenticated, fetch their reviews for this album to populate userRating
-      let songStats = Array.isArray(data) ? data : [];
+      console.log(`Fetching stats from: ${fullUrl}`);
 
-      if (isAuthenticated && user?.id) {
-        try {
-          // Make a request to get all user's reviews for this album's songs
-          const songIds = songStats.map((song) => song.id).join(",");
-          const userReviewsParams = new URLSearchParams({
-            userId: user.id.toString(),
-            songIds,
-          });
+      try {
+        const response = await fetchWrapper(fullUrl, getAuthHeader());
 
-          const userReviews = await fetchWrapper(
-            `/reviews/user/songs?${userReviewsParams.toString()}`,
-            getAuthHeader(true)
+        // Ensure we have a valid response
+        if (Array.isArray(response)) {
+          // Process and validate the response data
+          const validatedStats = response.map((song) => ({
+            ...song,
+            // Ensure these values are always numbers to prevent NaN in the chart
+            averageRating:
+              typeof song.averageRating === "number" ? song.averageRating : 0,
+            reviewCount:
+              typeof song.reviewCount === "number" ? song.reviewCount : 0,
+            userRating:
+              typeof song.userRating === "number" ? song.userRating : null,
+            groupAverage:
+              typeof song.groupAverage === "number"
+                ? song.groupAverage
+                : song.groupAverage !== null && song.groupAverage !== undefined
+                ? Number(song.groupAverage)
+                : null,
+          }));
+
+          // Merge with previous stats to preserve user ratings if needed
+          const mergedStats = mergeWithPrevStats(validatedStats);
+
+          // Sort by track number for consistency
+          const sortedStats = [...mergedStats].sort(
+            (a, b) => a.trackNumber - b.trackNumber
           );
 
-          // If we get user reviews, merge them with the song stats
-          if (userReviews && Array.isArray(userReviews.reviews)) {
-            // Create a map of songId -> userRating
-            const userRatingsMap: Record<number, number> = {};
-            userReviews.reviews.forEach(
-              (review: { songId: number; rating: number }) => {
-                userRatingsMap[review.songId] = review.rating;
+          // Update refs and state
+          prevStatsRef.current = sortedStats;
+          setStats(sortedStats);
+          setError(null); // Clear error
+
+          console.log(
+            "Updated stats with user ratings:",
+            sortedStats.map((s) => ({ id: s.id, userRating: s.userRating }))
+          );
+        } else {
+          throw new Error("Invalid response format");
+        }
+      } catch (fetchError) {
+        // If specific error with group/user filter, try falling back to public stats
+        if (
+          filters.groupId !== "all" ||
+          filters.userId !== "all" ||
+          filters.showUserOnly
+        ) {
+          try {
+            // Fall back to public stats
+            const publicResponse = await fetchWrapper(
+              `/albums/${albumId}/songs/stats`,
+              {
+                headers: { "Content-Type": "application/json" },
               }
             );
 
-            // Update the song stats with user ratings
-            songStats = songStats.map((song) => ({
-              ...song,
-              userRating: userRatingsMap[song.id] || song.userRating,
-            }));
+            if (Array.isArray(publicResponse)) {
+              const validatedStats = publicResponse.map((song) => ({
+                ...song,
+                averageRating:
+                  typeof song.averageRating === "number"
+                    ? song.averageRating
+                    : 0,
+                reviewCount:
+                  typeof song.reviewCount === "number" ? song.reviewCount : 0,
+                userRating:
+                  typeof song.userRating === "number" ? song.userRating : null,
+              }));
+
+              // Apply any pending user ratings
+              const mergedStats = mergeWithPrevStats(validatedStats);
+
+              // Sort by track number for consistency
+              const sortedStats = [...mergedStats].sort(
+                (a, b) => a.trackNumber - b.trackNumber
+              );
+
+              prevStatsRef.current = sortedStats;
+              setStats(sortedStats);
+              setError(
+                "Could not load filtered data. Showing public ratings instead."
+              );
+            } else {
+              throw new Error("Invalid response format from public stats");
+            }
+          } catch (fallbackError) {
+            throw fetchError; // Throw the original error if fallback fails
           }
-        } catch (userReviewsError) {
-          console.error("Error fetching user reviews:", userReviewsError);
-          // Continue with the stats we have even if user reviews fail
+        } else {
+          throw fetchError;
         }
       }
-
-      setStats(songStats);
-    } catch (err: any) {
+    } catch (err) {
       console.error("Error fetching album stats:", err);
-      setError(err.message || "Failed to load song statistics");
+      setError(
+        err instanceof Error ? err.message : "Failed to load song statistics"
+      );
     } finally {
       setLoading(false);
     }
-  }, [albumId, filters]);
+  }, [
+    albumId,
+    filters,
+    isAuthenticated,
+    user,
+    getAuthHeader,
+    mergeWithPrevStats,
+  ]);
 
+  // Special effect to handle reviewUpdateCount changes
   useEffect(() => {
-    if (albumId) fetchStats();
-  }, [albumId, filters, fetchStats, reviewUpdateCount]);
+    if (reviewUpdateCount > 0) {
+      console.log("Review update triggered - refreshing stats");
+      fetchStats();
+    }
+  }, [reviewUpdateCount, fetchStats]);
 
-  return { stats, loading, error, refreshStats: fetchStats };
+  // Main effect to fetch stats when dependencies change
+  useEffect(() => {
+    fetchStats();
+  }, [fetchStats]);
+
+  return {
+    stats,
+    loading,
+    error,
+    refreshStats: fetchStats,
+    setUserRating, // Export this so ReviewsTable can use it
+  };
 };

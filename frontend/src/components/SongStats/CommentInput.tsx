@@ -20,7 +20,7 @@ const CommentInput: React.FC<CommentInputProps> = ({
         type="text"
         value={content}
         onChange={(e) => handleContentChange(songId, e.target.value)}
-        placeholder="Add comment (autosaves)"
+        placeholder="Add a comment"
         className="w-full border-gray-300 rounded-sm text-sm p-1 focus:border-indigo-500 focus:ring-indigo-500 placeholder:text-gray-300 placeholder:italic"
       />
       {isEditing && (
