@@ -10,6 +10,13 @@ export interface SongStat {
   userReviews?: UserReview[];
 }
 
+export interface Album {
+  id: number;
+  title: string;
+  artworkUrl: string;
+  releaseDate: string;
+}
+
 export interface UserReview {
   id: number;
   userId: number;
@@ -40,6 +47,7 @@ export interface Group {
   role: string;
   joinedAt: string;
   createdAt: string;
+  inviteCode: string;
 }
 
 export interface FiltersState {

@@ -36,6 +36,18 @@ const UserDropdown = () => {
           <MenuItem>
             {({ active }: { active: boolean }) => (
               <Link
+                to="/groups"
+                className={`${
+                  active ? "bg-gray-100 text-gray-900" : "text-gray-700"
+                } block px-4 py-2 text-sm`}
+              >
+                Groups
+              </Link>
+            )}
+          </MenuItem>
+          <MenuItem>
+            {({ active }: { active: boolean }) => (
+              <Link
                 to="/dashboard"
                 className={`${
                   active ? "bg-gray-100 text-gray-900" : "text-gray-700"
@@ -84,7 +96,14 @@ const Navbar: React.FC = () => {
 
   return (
     <nav className="mx-auto w-full flex items-center justify-between border-b border-gray-200 mt-4 mb-2 p-4 py-6 lg:px-8 select-none">
-      <div className="flex-1"></div>
+      <div className="flex-1 flex items-center">
+        <Link
+          to="/groups"
+          className="text-sm font-semibold leading-6 text-gray-900 hover:text-gray-700 mr-4"
+        >
+          Groups
+        </Link>
+      </div>
 
       <div className="flex justify-center">
         <Link to="/" className="-m-1.5 p-1.5">

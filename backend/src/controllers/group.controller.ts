@@ -6,6 +6,9 @@ import {
   sendGroupInviteService,
   joinGroupService,
   getUserGroupsService,
+  joinPublicGroupService,
+  getGroupByIdService,
+  getPublicGroupsService,
 } from "../services/group.service.js";
 import asyncHandler from "../middleware/asyncRouteHandler.js";
 
@@ -61,5 +64,32 @@ export const getUserGroupsController = asyncHandler(
     console.log("User object from token:", req.user);
     const groups = await getUserGroupsService(req.user!.id);
     res.json(groups);
+  }
+);
+
+export const getGroupByIdController = asyncHandler(
+  async (req: Request, res: Response) => {
+    const groupId = parseInt(req.params.groupId);
+    const userId = req.user!.id;
+
+    const group = await getGroupByIdService(groupId, userId);
+    res.json(group);
+  }
+);
+
+export const getPublicGroupsController = asyncHandler(
+  async (req: Request, res: Response) => {
+    const publicGroups = await getPublicGroupsService();
+    res.json({ groups: publicGroups });
+  }
+);
+
+export const joinPublicGroupController = asyncHandler(
+  async (req: Request, res: Response) => {
+    const groupId = parseInt(req.params.groupId);
+    const userId = req.user!.id;
+
+    const membership = await joinPublicGroupService(groupId, userId);
+    res.json(membership);
   }
 );
