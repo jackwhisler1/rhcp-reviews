@@ -1,47 +1,41 @@
-// RatingComponent.tsx
-import React from "react";
 import { Rating } from "react-simple-star-rating";
+import { LoadingSpinner } from "../common";
+import { useState, useEffect } from "react";
 
 interface RatingComponentProps {
-  songId: number;
-  currentRating: number;
-  userRating: number | null;
-  submitting: boolean;
-  successMessage: string;
-  handleRatingChange: (songId: number, rating: number) => void;
+  value: number;
+  onSubmit: (stars: number) => void;
+  isSubmitting?: boolean;
 }
 
 const RatingComponent: React.FC<RatingComponentProps> = ({
-  songId,
-  currentRating,
-  userRating,
-  submitting,
-  successMessage,
-  handleRatingChange,
+  value,
+  onSubmit,
+  isSubmitting,
 }) => {
+  const [localValue, setLocalValue] = useState(value);
+
+  useEffect(() => {
+    setLocalValue(value);
+  }, [value]);
   return (
-    <div className="flex items-center justify-center relative">
+    <div className="relative inline-flex items-center">
       <Rating
-        onClick={(rate) => handleRatingChange(songId, rate)}
-        initialValue={(currentRating || userRating || 0) / 2}
-        key={`rating-${songId}-${currentRating || userRating || 0}`}
-        size={18}
+        onClick={onSubmit}
+        initialValue={localValue / 2}
+        size={20}
         allowFraction
         iconsCount={5}
         transition
-      />
-      {submitting && (
-        <div className="absolute -right-6">
-          <div className="animate-spin h-4 w-4 border-2 border-indigo-500 rounded-full border-t-transparent"></div>
-        </div>
-      )}
-      {successMessage && (
-        <div className="absolute right-0 -bottom-5 text-xs text-green-600 whitespace-nowrap">
-          {successMessage}
+        readonly={isSubmitting}
+      />{" "}
+      <span className="ml-2 text-sm font-medium">{localValue.toFixed(1)}</span>
+      {isSubmitting && (
+        <div className="ml-2">
+          <LoadingSpinner />
         </div>
       )}
     </div>
   );
 };
-
-export default React.memo(RatingComponent);
+export default RatingComponent;

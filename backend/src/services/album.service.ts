@@ -71,7 +71,9 @@ export const getAlbumSongStatsService = async ({
   if (userId) {
     userReviews = await prisma.review.findMany({
       where: { userId, song: { albumId } },
-      select: { songId: true, rating: true },
+      select: { songId: true, rating: true, id: true },
+      orderBy: { createdAt: "desc" },
+      distinct: ["userId", "songId", "groupId"],
     });
   }
 
@@ -88,6 +90,7 @@ export const getAlbumSongStatsService = async ({
       averageRating: stats?._avg.rating || 0,
       reviewCount: stats?._count.rating || 0,
       userRating: userReview?.rating || null,
+      userReviewId: userReview?.id || null,
     };
   });
 };

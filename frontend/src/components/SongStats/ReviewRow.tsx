@@ -1,107 +1,114 @@
 // ReviewRow.tsx
-import React from "react";
+import React, { useMemo } from "react";
 import { Rating } from "react-simple-star-rating";
-import { SongStat } from "../../types/rhcp-types";
-import CommentInput from "./CommentInput";
+import { SongStat, UserReview } from "../../types/rhcp-types";
 import RatingComponent from "./RatingComponent";
 
 interface ReviewRowProps {
   song: SongStat;
   isUserView: boolean;
   isGroupView: boolean;
+  groupId?: string;
   isAuthenticated: boolean;
   expandedSongId: number | null;
   currentRatings: { [key: number]: number };
-  reviewContents: { [key: number]: string };
   submitting: { [key: number]: boolean };
-  successMessages: { [key: number]: string };
-  editingComments: { [key: number]: boolean };
   handleExpand: (songId: number) => void;
   handleRatingChange: (songId: number, rating: number) => void;
-  handleContentChange: (songId: number, content: string) => void;
+  filteredReviews: UserReview[];
+  userId?: Number;
 }
 
 const ReviewRow: React.FC<ReviewRowProps> = ({
   song,
   isUserView,
   isGroupView,
+  groupId,
   isAuthenticated,
   expandedSongId,
   currentRatings,
-  reviewContents,
   submitting,
-  successMessages,
-  editingComments,
   handleExpand,
   handleRatingChange,
-  handleContentChange,
+  filteredReviews,
+  userId,
 }) => {
+  const hasUserReview = useMemo(() => {
+    if (!isGroupView)
+      return filteredReviews.some((review) => review.userId === userId);
+
+    return filteredReviews.some(
+      (review) =>
+        review.userId === userId && review.groupId === parseInt(groupId || "0")
+    );
+  }, [filteredReviews, userId, groupId, isGroupView]);
+
+  const otherReviewsCount = useMemo(() => {
+    if (!isGroupView) return filteredReviews.length - (hasUserReview ? 1 : 0);
+
+    return filteredReviews.filter(
+      (review) =>
+        review.groupId === parseInt(groupId || "0") && review.userId !== userId
+    ).length;
+  }, [filteredReviews, userId, groupId, isGroupView, hasUserReview]);
+
   return (
     <tr
-      className={`hover:bg-gray-50 transition-colors ${
+      className={`hover:bg-gray-50 ${
         expandedSongId === song.id ? "bg-gray-50" : ""
       }`}
     >
-      <td className="whitespace-nowrap px-3 py-2 text-sm text-gray-700">
-        {song.trackNumber}
-      </td>
-      <td className="whitespace-nowrap px-3 py-2 text-sm font-medium text-gray-900">
-        {song.title}
-      </td>
+      {/* Basic song info */}
+      <td className="px-3 py-2 text-sm">{song.trackNumber}</td>
+      <td className="px-3 py-2 text-sm font-medium">{song.title}</td>
 
+      {/* Conditional averages */}
       {!isUserView && (
-        <td className="whitespace-nowrap px-3 py-2 text-sm text-gray-700 text-right">
+        <td className="px-3 py-2 text-sm text-right">
           {song.averageRating.toFixed(1)}
         </td>
       )}
-
       {isGroupView && (
-        <td className="whitespace-nowrap px-3 py-2 text-sm text-gray-700 text-right">
+        <td className="px-3 py-2 text-sm text-right">
           {(song.groupAverage || 0).toFixed(1)}
         </td>
       )}
 
-      <td className="whitespace-nowrap px-2 py-2 text-sm text-gray-700">
+      {/* Interactive rating */}
+      <td className="px-2 py-2 text-sm">
         {isAuthenticated ? (
           <RatingComponent
-            songId={song.id}
-            currentRating={currentRatings[song.id]}
-            userRating={song.userRating}
-            submitting={submitting[song.id]}
-            successMessage={successMessages[song.id]}
-            handleRatingChange={handleRatingChange}
+            value={currentRatings[song.id]}
+            onSubmit={(stars: number) => handleRatingChange(song.id, stars)}
+            isSubmitting={submitting[song.id]}
           />
         ) : (
-          <div className="text-center">
-            {song.userRating?.toFixed(1) || "-"}
-          </div>
+          <div>{song.userRating?.toFixed(1) || "-"}</div>
         )}
       </td>
 
-      {isAuthenticated && (
-        <td className="px-3 py-2 text-sm">
-          <CommentInput
-            songId={song.id}
-            content={reviewContents[song.id] || ""}
-            isEditing={editingComments[song.id]}
-            handleContentChange={handleContentChange}
-          />
-        </td>
-      )}
+      <td className="px-3 py-2 text-right">
+        <div className="flex gap-2 justify-end">
+          <button
+            className={`rounded-md px-3 py-2 text-sm ${
+              expandedSongId === song.id
+                ? "bg-indigo-100 text-indigo-700"
+                : "bg-gray-100 hover:bg-gray-200"
+            }`}
+            onClick={() => handleExpand(song.id)}
+          >
+            {hasUserReview ? "Edit Your Review" : "Add Review"}
+          </button>
 
-      <td className="whitespace-nowrap px-3 py-2 text-right text-sm font-medium">
-        <button
-          className={`inline-flex items-center rounded-md px-2 py-1 text-xs font-semibold shadow-sm ${
-            expandedSongId === song.id
-              ? "bg-indigo-100 text-indigo-700"
-              : "bg-white-smoke"
-          } focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 transition-colors`}
-          onClick={() => handleExpand(song.id)}
-        >
-          {expandedSongId === song.id
-            ? "Hide Reviews"
-            : `View Reviews (${song.reviewCount})`}
-        </button>
+          {otherReviewsCount > 0 && (
+            <button
+              className="bg-gray-100 hover:bg-gray-200 rounded-md px-3 py-2 text-sm"
+              onClick={() => handleExpand(song.id)}
+            >
+              {`Read Reviews (${otherReviewsCount})`}
+            </button>
+          )}
+        </div>
       </td>
     </tr>
   );

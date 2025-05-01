@@ -6,6 +6,7 @@ export interface SongStat {
   averageRating: number;
   reviewCount: number;
   userRating: number | null;
+  userReviewId: number | null;
   groupAverage?: number;
   userReviews?: UserReview[];
 }
