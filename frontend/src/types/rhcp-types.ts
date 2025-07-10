@@ -56,12 +56,13 @@ export interface Group {
 export interface FiltersState {
   groupId: string;
   userId: string;
-  showUserOnly: boolean;
+  selectedUserId: string;
 }
 
 export interface SongStatsProps {
   albumId: number;
   albumTitle: string;
   userId?: string;
+  selectedUserId?: string;
   groups: Group[];
 }

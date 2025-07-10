@@ -41,7 +41,7 @@ const ChartComponent = React.memo(
       };
 
       const selectedUserSeries =
-        filters.userId !== "all" && !filters.showUserOnly
+        filters.groupId !== "all" && filters.userId
           ? {
               name: "Selected User",
               data: sortedSongs.map((song) => song.selectedUserRating ?? null),

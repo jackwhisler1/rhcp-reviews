@@ -7,6 +7,7 @@ interface FiltersProps {
   filters: FiltersState;
   onFilterChange: (filters: Partial<FiltersState>) => void;
   loadingMembers?: boolean;
+  currentUserId: string | undefined;
 }
 
 export const Filters: React.FC<FiltersProps> = ({
@@ -15,7 +16,10 @@ export const Filters: React.FC<FiltersProps> = ({
   filters,
   onFilterChange,
   loadingMembers = false,
+  currentUserId,
 }) => {
+  const filteredMembers = members.filter((m) => m.id !== Number(currentUserId));
+
   return (
     <div className="flex flex-wrap gap-3 items-center bg-white rounded-lg p-3 shadow-sm">
       {/* Group Filter */}
@@ -44,13 +48,17 @@ export const Filters: React.FC<FiltersProps> = ({
             User Ratings
           </label>
           <select
-            value={filters.userId}
-            onChange={(e) => onFilterChange({ userId: e.target.value })}
+            value={filters.userId ?? "all"}
+            onChange={(e) =>
+              onFilterChange({
+                userId: e.target.value === "all" ? undefined : e.target.value,
+              })
+            }
             className="w-full rounded-md border border-gray-300 px-2 py-1 text-sm shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
             disabled={loadingMembers}
           >
             <option value="all">All Users</option>
-            {members.map((member) => (
+            {filteredMembers.map((member) => (
               <option key={member.id} value={member.id.toString()}>
                 {member.username}
               </option>
@@ -58,19 +66,6 @@ export const Filters: React.FC<FiltersProps> = ({
           </select>
         </div>
       )}
-
-      {/* Show user only checkbox */}
-      <div className="flex items-end h-full pb-1 ml-2">
-        <label className="inline-flex items-center">
-          <input
-            type="checkbox"
-            className="rounded border-gray-300 text-indigo-600 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
-            checked={filters.showUserOnly}
-            onChange={(e) => onFilterChange({ showUserOnly: e.target.checked })}
-          />
-          <span className="ml-2 text-xs text-gray-700">Your ratings only</span>
-        </label>
-      </div>
     </div>
   );
 };

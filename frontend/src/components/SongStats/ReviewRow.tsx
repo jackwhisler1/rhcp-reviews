@@ -6,7 +6,6 @@ import RatingComponent from "./RatingComponent";
 
 interface ReviewRowProps {
   song: SongStat;
-  isUserView: boolean;
   isGroupView: boolean;
   groupId?: string;
   isAuthenticated: boolean;
@@ -21,7 +20,6 @@ interface ReviewRowProps {
 
 const ReviewRow: React.FC<ReviewRowProps> = ({
   song,
-  isUserView,
   isGroupView,
   groupId,
   isAuthenticated,
@@ -61,14 +59,11 @@ const ReviewRow: React.FC<ReviewRowProps> = ({
       <td className="px-3 py-2 text-sm">{song.trackNumber}</td>
       <td className="px-3 py-2 text-sm font-medium">{song.title}</td>
 
-      {/* Public Avg or empty cell */}
-      {!isUserView ? (
-        <td className="px-3 py-2 text-sm text-right">
-          {song.publicAverage.toFixed(1)}
-        </td>
-      ) : (
-        <td className="px-3 py-2 text-sm text-right"></td>
-      )}
+      {/* Public Avg */}
+
+      <td className="px-3 py-2 text-sm text-right">
+        {song.publicAverage.toFixed(1)}
+      </td>
 
       {/* Group Avg or empty cell */}
       {isGroupView ? (

@@ -136,11 +136,6 @@ export const useAlbumStats = (
         statsParams.append("userId", String(user.id));
       }
 
-      // Special filter for showing only the current user's ratings
-      if (filters.showUserOnly && isAuthenticated && user?.id) {
-        statsParams.append("userFilter", "true");
-      }
-
       const apiUrl = `/albums/${albumId}/songs/stats`;
       const queryString = statsParams.toString();
       const fullUrl = queryString ? `${apiUrl}?${queryString}` : apiUrl;
@@ -206,11 +201,7 @@ export const useAlbumStats = (
         }
       } catch (fetchError) {
         // If specific error with group/user filter, try falling back to public stats
-        if (
-          filters.groupId !== "all" ||
-          filters.userId !== "all" ||
-          filters.showUserOnly
-        ) {
+        if (filters.groupId !== "all" || filters.userId !== "all") {
           try {
             // Fall back to public stats
             const publicResponse = await fetchWrapper(

@@ -70,7 +70,6 @@ const ReviewsTable = ({
   };
 
   const isCurrentUserSelected = filters.userId === String(user?.id);
-  const isUserView = filters.showUserOnly || isCurrentUserSelected;
 
   const contentsRef = useRef<Record<number, string>>({});
 
@@ -287,13 +286,10 @@ const ReviewsTable = ({
             </th>
 
             {/* Public Avg */}
-            {!filters.showUserOnly && filters.userId === "all" ? (
-              <th className="px-4 py-3.5 text-right text-sm font-semibold text-gray-900">
-                Public Avg
-              </th>
-            ) : (
-              <th className="px-4 py-3.5 text-right text-sm" />
-            )}
+
+            <th className="px-4 py-3.5 text-right text-sm font-semibold text-gray-900">
+              Public Avg
+            </th>
 
             {/* Group Avg */}
             {filters.groupId !== "all" ? (
@@ -317,7 +313,6 @@ const ReviewsTable = ({
             <React.Fragment key={song.id}>
               <ReviewRow
                 song={song}
-                isUserView={filters.showUserOnly}
                 isGroupView={filters.groupId !== "all"}
                 groupId={filters.groupId}
                 isAuthenticated={isAuthenticated}

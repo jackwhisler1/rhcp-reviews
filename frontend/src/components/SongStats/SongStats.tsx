@@ -21,6 +21,7 @@ const SongStats = ({
   albumTitle,
   userId,
   groups = [],
+  selectedUserId,
 }: SongStatsProps) => {
   const { user } = useAuth();
   const [localStats, setLocalStats] = useState<SongStat[]>([]);
@@ -35,7 +36,7 @@ const SongStats = ({
   const [filters, setFilters] = useState<FiltersState>({
     groupId: "all",
     userId: userId || "all",
-    showUserOnly: false,
+    selectedUserId: selectedUserId || "all",
   });
   const [albums, setAlbums] = useState<Album[]>([]);
   const [isLargeScreen, setIsLargeScreen] = useState(false);
@@ -128,6 +129,7 @@ const SongStats = ({
           filters={filters}
           onFilterChange={handleFilterChange}
           loadingMembers={membersLoading}
+          currentUserId={userId}
         />
       </div>
 
