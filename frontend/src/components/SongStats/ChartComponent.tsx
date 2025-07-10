@@ -31,8 +31,8 @@ const ChartComponent = React.memo(
       const publicSeries = {
         name: "Public Average",
         data: sortedSongs.map((song) =>
-          typeof song.averageRating === "number"
-            ? parseFloat(song.averageRating.toFixed(1))
+          typeof song.publicAverage === "number"
+            ? parseFloat(song.publicAverage.toFixed(1))
             : null
         ),
         color: "#E53E3E",
@@ -199,16 +199,16 @@ const ChartComponent = React.memo(
               : "No rating";
           const seriesName = w.globals.seriesNames[seriesIndex];
 
-          return `<div class="apexcharts-tooltip-title" style="font-weight: bold; margin-bottom: 5px; font-size: 13px;">
-                  ${songTitle}
-                </div>
+          return `<div class="arrow_box"> <div class="apexcharts-tooltip-title" style="font-weight: bold; margin-bottom: 5px; font-size: 13px;">
+                  ${songTitle} 
+                </div><span class="apexcharts-tooltip-text-y-label">${seriesName}: </span>
+                    <span class="apexcharts-tooltip-text-y-value">${formattedRating}</span>
                 <div class="apexcharts-tooltip-series-group">
                   <span class="apexcharts-tooltip-marker" style="background-color: ${w.globals.colors[seriesIndex]}"></span>
                   <div>
-                    <span class="apexcharts-tooltip-text-y-label">${seriesName}: </span>
-                    <span class="apexcharts-tooltip-text-y-value">${formattedRating}</span>
+                   
                   </div>
-                </div>`;
+                </div></div>`;
         },
       },
       legend: {

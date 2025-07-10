@@ -3,11 +3,12 @@ export interface SongStat {
   title: string;
   trackNumber: number;
   duration: string;
-  averageRating: number;
+  publicAverage: number;
   reviewCount: number;
+  groupAverage: number;
+  groupReviewCount: number;
   userRating: number | null;
   userReviewId: number | null;
-  groupAverage?: number;
   userReviews?: UserReview[];
 }
 

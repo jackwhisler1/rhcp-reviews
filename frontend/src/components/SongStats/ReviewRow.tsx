@@ -65,7 +65,7 @@ const ReviewRow: React.FC<ReviewRowProps> = ({
       {/* Conditional averages */}
       {!isUserView && (
         <td className="px-3 py-2 text-sm text-right">
-          {song.averageRating.toFixed(1)}
+          {song.publicAverage.toFixed(1)}
         </td>
       )}
       {isGroupView && (

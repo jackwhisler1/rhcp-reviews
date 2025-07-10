@@ -40,6 +40,7 @@ export const createAlbumService = async (data: Prisma.AlbumCreateInput) => {
 //   };
 // };
 
+/**Returns averages for public, group, and user if ids are provided.  */
 export const getAlbumSongStatsService = async ({
   albumId,
   groupId,
@@ -51,20 +52,24 @@ export const getAlbumSongStatsService = async ({
     select: { id: true, title: true, trackNumber: true, duration: true },
   });
 
-  // Build review filter
-  const reviewFilter: any = {
-    song: { albumId },
-    ...(groupId && { groupId }),
-    ...(userId && { userId }),
-  };
-
-  // Get aggregated stats
-  const aggregatedStats = await prisma.review.groupBy({
+  // Public stats (all reviews for songs in album)
+  const publicStats = await prisma.review.groupBy({
     by: ["songId"],
-    where: reviewFilter,
+    where: { song: { albumId } },
     _avg: { rating: true },
     _count: { rating: true },
   });
+
+  // Group-specific stats if groupId is provided
+  let groupStats: any[] = [];
+  if (groupId) {
+    groupStats = await prisma.review.groupBy({
+      by: ["songId"],
+      where: { song: { albumId }, groupId: groupId },
+      _avg: { rating: true },
+      _count: { rating: true },
+    } as any);
+  }
 
   // Get user reviews if applicable
   let userReviews: any[] = [];
@@ -79,7 +84,8 @@ export const getAlbumSongStatsService = async ({
 
   // Merge data
   return songs.map((song) => {
-    const stats = aggregatedStats.find((s) => s.songId === song.id);
+    const all = publicStats.find((s) => s.songId === song.id);
+    const group = groupStats.find((s) => s.songId === song.id);
     const userReview = userReviews.find((r) => r.songId === song.id);
 
     return {
@@ -87,10 +93,12 @@ export const getAlbumSongStatsService = async ({
       title: song.title,
       trackNumber: song.trackNumber,
       duration: song.duration,
-      averageRating: stats?._avg.rating || 0,
-      reviewCount: stats?._count.rating || 0,
-      userRating: userReview?.rating || null,
-      userReviewId: userReview?.id || null,
+      publicAverage: all?._avg.rating || 0,
+      publicReviewCount: all?._count.rating || 0,
+      groupAverage: group?._avg.rating ?? null,
+      groupReviewCount: group?._count.rating ?? null,
+      userRating: userReview?.rating ?? null,
+      userReviewId: userReview?.id ?? null,
     };
   });
 };
