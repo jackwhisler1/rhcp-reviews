@@ -57,6 +57,7 @@ export interface FiltersState {
   groupId: string;
   userId: string;
   selectedUserId: string;
+  selectedUserName: string;
 }
 
 export interface SongStatsProps {
@@ -64,5 +65,6 @@ export interface SongStatsProps {
   albumTitle: string;
   userId?: string;
   selectedUserId?: string;
+  selectedUserName?: string;
   groups: Group[];
 }

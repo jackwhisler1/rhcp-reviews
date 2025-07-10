@@ -22,6 +22,7 @@ const SongStats = ({
   userId,
   groups = [],
   selectedUserId,
+  selectedUserName,
 }: SongStatsProps) => {
   const { user } = useAuth();
   const [localStats, setLocalStats] = useState<SongStat[]>([]);
@@ -37,6 +38,7 @@ const SongStats = ({
     groupId: "all",
     userId: userId || "all",
     selectedUserId: selectedUserId || "all",
+    selectedUserName: selectedUserName || "user",
   });
   const [albums, setAlbums] = useState<Album[]>([]);
   const [isLargeScreen, setIsLargeScreen] = useState(false);

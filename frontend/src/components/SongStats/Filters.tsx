@@ -49,11 +49,22 @@ export const Filters: React.FC<FiltersProps> = ({
           </label>
           <select
             value={filters.userId ?? "all"}
-            onChange={(e) =>
+            onChange={(e) => {
+              const selectedUserId = e.target.value;
+              const selectedUser =
+                selectedUserId === "all"
+                  ? undefined
+                  : filteredMembers.find(
+                      (m) => m.id.toString() === selectedUserId
+                    );
+
               onFilterChange({
-                userId: e.target.value === "all" ? undefined : e.target.value,
-              })
-            }
+                userId: selectedUserId === "all" ? undefined : selectedUserId,
+                selectedUserName: selectedUser
+                  ? selectedUser.username
+                  : undefined,
+              });
+            }}
             className="w-full rounded-md border border-gray-300 px-2 py-1 text-sm shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
             disabled={loadingMembers}
           >

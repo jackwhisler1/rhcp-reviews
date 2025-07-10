@@ -41,9 +41,9 @@ const ChartComponent = React.memo(
       };
 
       const selectedUserSeries =
-        filters.groupId !== "all" && filters.userId
+        filters.groupId !== "all" && filters.selectedUserName
           ? {
-              name: "Selected User",
+              name: filters.selectedUserName,
               data: sortedSongs.map((song) => song.selectedUserRating ?? null),
               color: "#4FD1C5",
             }
