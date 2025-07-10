@@ -48,8 +48,11 @@ export const useReviewsManager = (
     const ratings: { [key: number]: number } = {};
 
     songStats.forEach((song: SongStat) => {
-      if (song.userRating !== undefined && song.userRating !== null) {
-        ratings[song.id] = song.userRating;
+      if (
+        song.currentUserRating !== undefined &&
+        song.currentUserRating !== null
+      ) {
+        ratings[song.id] = song.currentUserRating;
       }
     });
 
@@ -224,7 +227,8 @@ export const useReviewsManager = (
       // Find if user already has a review
       const songData = songStats.find((s: SongStat) => s.id === songId);
       const hasExistingReview =
-        songData?.userRating !== undefined && songData.userRating !== null;
+        songData?.currentUserRating !== undefined &&
+        songData.currentUserRating !== null;
 
       if (rating === 0) {
         throw new Error("Please provide a rating");
@@ -240,7 +244,7 @@ export const useReviewsManager = (
       // Find review ID if updating
       let reviewId = null;
 
-      // If we have an existing review based on userRating
+      // If we have an existing review based on currentUserRating
       if (hasExistingReview) {
         // First check our cached reviews
         if (userReviewsRef.current[songId]) {

@@ -58,7 +58,6 @@ export const getSongReviewsController = asyncHandler(
 
     const result = await getSongReviewsService(
       parseInt(songId as string),
-      groupId ? parseInt(groupId as string) : undefined,
       req.user?.id
     );
 

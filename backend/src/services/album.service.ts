@@ -5,6 +5,7 @@ interface SongStatsParams {
   albumId: number;
   groupId?: number;
   userId?: number;
+  selectedUserId?: number; // user being compared
 }
 
 export const createAlbumService = async (data: Prisma.AlbumCreateInput) => {
@@ -16,35 +17,12 @@ export const createAlbumService = async (data: Prisma.AlbumCreateInput) => {
   });
 };
 
-// export const getAlbumStatsService = async (albumId: number) => {
-//   const [reviews, averageRating, songs] = await prisma.$transaction([
-//     prisma.review.findMany({
-//       where: { song: { albumId } },
-//       select: { id: true, rating: true },
-//     }),
-//     prisma.review.aggregate({
-//       _avg: { rating: true },
-//       where: { song: { albumId } },
-//     }),
-//     prisma.song.findMany({
-//       where: { albumId },
-//       select: { id: true, title: true },
-//     }),
-//   ]);
-
-//   return {
-//     reviewCount: reviews.length,
-//     averageRating: averageRating._avg.rating || 0,
-//     songCount: songs.length,
-//     songs,
-//   };
-// };
-
 /**Returns averages for public, group, and user if ids are provided.  */
 export const getAlbumSongStatsService = async ({
   albumId,
   groupId,
   userId,
+  selectedUserId,
 }: SongStatsParams) => {
   // Get all songs in the album
   const songs = await prisma.song.findMany({
@@ -63,12 +41,21 @@ export const getAlbumSongStatsService = async ({
   // Group-specific stats if groupId is provided
   let groupStats: any[] = [];
   if (groupId) {
-    groupStats = await prisma.review.groupBy({
+    const groupMembers = await prisma.review.findMany({
+      where: { groupId },
+      select: { userId: true },
+    } as any);
+
+    const userIds = groupMembers.map((m) => m.userId);
+    groupStats = (await prisma.review.groupBy({
       by: ["songId"],
-      where: { song: { albumId }, groupId: groupId },
+      where: {
+        song: { albumId },
+        userId: { in: userIds },
+      },
       _avg: { rating: true },
       _count: { rating: true },
-    } as any);
+    })) as any;
   }
 
   // Get user reviews if applicable
@@ -82,11 +69,25 @@ export const getAlbumSongStatsService = async ({
     });
   }
 
+  // Get selected user reviews if applicable
+  let selectedUserReviews: any[] = [];
+  if (selectedUserId) {
+    selectedUserReviews = await prisma.review.findMany({
+      where: { userId: selectedUserId, song: { albumId } },
+      select: { songId: true, rating: true, id: true },
+      orderBy: { createdAt: "desc" },
+    });
+    console.log("selectedUserReviews:", selectedUserReviews);
+  }
+
   // Merge data
   return songs.map((song) => {
     const all = publicStats.find((s) => s.songId === song.id);
     const group = groupStats.find((s) => s.songId === song.id);
     const userReview = userReviews.find((r) => r.songId === song.id);
+    const selectedUserReview = selectedUserReviews.find(
+      (r) => r.songId === song.id
+    );
 
     return {
       id: song.id,
@@ -97,8 +98,9 @@ export const getAlbumSongStatsService = async ({
       publicReviewCount: all?._count.rating || 0,
       groupAverage: group?._avg.rating ?? null,
       groupReviewCount: group?._count.rating ?? null,
-      userRating: userReview?.rating ?? null,
-      userReviewId: userReview?.id ?? null,
+      currentUserRating: userReview?.rating ?? null,
+      currentUserReviewId: userReview?.id ?? null,
+      selectedUserRating: selectedUserReview?.rating ?? null,
     };
   });
 };

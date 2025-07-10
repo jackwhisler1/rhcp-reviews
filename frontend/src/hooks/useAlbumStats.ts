@@ -64,22 +64,29 @@ export const useAlbumStats = (
 
       // If we have a pending rating, that takes highest priority
       if (pendingRating !== undefined) {
-        mergedSong.userRating = pendingRating;
+        mergedSong.currentUserRating = pendingRating;
       }
-      // If the new song has a userRating, use that (API responded with our rating)
+      // If the new song has a currentUserRating, use that (API responded with our rating)
       else if (
-        newSong.userRating !== undefined &&
-        newSong.userRating !== null
+        newSong.currentUserRating !== undefined &&
+        newSong.currentUserRating !== null
       ) {
-        mergedSong.userRating = newSong.userRating;
+        mergedSong.currentUserRating = newSong.currentUserRating;
       }
-      // If the new song doesn't have a userRating but previous did, preserve it
+      // If the new song doesn't have a currentUserRating but previous did, preserve it
       else if (
         prevSong &&
-        prevSong.userRating !== undefined &&
-        prevSong.userRating !== null
+        prevSong.currentUserRating !== undefined &&
+        prevSong.currentUserRating !== null
       ) {
-        mergedSong.userRating = prevSong.userRating;
+        mergedSong.currentUserRating = prevSong.currentUserRating;
+      }
+
+      if (
+        newSong.selectedUserRating !== undefined &&
+        newSong.selectedUserRating !== null
+      ) {
+        mergedSong.selectedUserRating = newSong.selectedUserRating;
       }
 
       return mergedSong;
@@ -100,7 +107,7 @@ export const useAlbumStats = (
     // Also update the current stats state immediately for UI feedback
     setStats((currentStats) =>
       currentStats.map((song) =>
-        song.id === songId ? { ...song, userRating: rating } : song
+        song.id === songId ? { ...song, currentUserRating: rating } : song
       )
     );
   }, []);
@@ -120,9 +127,13 @@ export const useAlbumStats = (
         statsParams.append("groupId", filters.groupId);
       }
 
-      // Add user filter if applicable
-      if (filters.userId !== "all" && filters.userId) {
-        statsParams.append("userId", filters.userId);
+      // Add selected user filter if applicable
+      if (filters.userId !== "all" && filters.userId !== String(user?.id)) {
+        statsParams.append("selectedUserId", filters.userId);
+      }
+
+      if (isAuthenticated && user?.id) {
+        statsParams.append("userId", String(user.id));
       }
 
       // Special filter for showing only the current user's ratings
@@ -144,18 +155,29 @@ export const useAlbumStats = (
           // Process and validate the response data
           const validatedStats = response.map((song) => ({
             ...song,
-            // Ensure these values are always numbers to prevent NaN in the chart
-            averageRating:
-              typeof song.averageRating === "number" ? song.averageRating : 0,
-            reviewCount:
-              typeof song.reviewCount === "number" ? song.reviewCount : 0,
-            userRating:
-              typeof song.userRating === "number" ? song.userRating : null,
+            currentUserRating:
+              typeof song.currentUserRating === "number"
+                ? song.currentUserRating
+                : null,
+            selectedUserRating:
+              typeof song.selectedUserRating === "number"
+                ? song.selectedUserRating
+                : null,
+            publicAverage:
+              typeof song.publicAverage === "number" ? song.publicAverage : 0,
+            publicReviewCount:
+              typeof song.publicReviewCount === "number"
+                ? song.publicReviewCount
+                : 0,
             groupAverage:
               typeof song.groupAverage === "number"
                 ? song.groupAverage
                 : song.groupAverage !== null && song.groupAverage !== undefined
                 ? Number(song.groupAverage)
+                : null,
+            groupReviewCount:
+              typeof song.groupReviewCount === "number"
+                ? song.groupReviewCount
                 : null,
           }));
 
@@ -174,7 +196,10 @@ export const useAlbumStats = (
 
           console.log(
             "Updated stats with user ratings:",
-            sortedStats.map((s) => ({ id: s.id, userRating: s.userRating }))
+            sortedStats.map((s) => ({
+              id: s.id,
+              currentUserRating: s.currentUserRating,
+            }))
           );
         } else {
           throw new Error("Invalid response format");

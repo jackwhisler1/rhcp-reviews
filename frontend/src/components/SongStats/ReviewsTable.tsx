@@ -43,17 +43,14 @@ const ReviewsTable = ({
   const currentRatings = useMemo(
     () =>
       songStats.reduce((acc, song) => {
-        // Find the most relevant rating
-        const groupRating =
-          filters.groupId !== "all" ? song.groupAverage : null;
-
+        const inProgress = state.ratings[song.id];
         return {
           ...acc,
           [song.id]:
-            groupRating ?? song.userRating ?? state.ratings[song.id] ?? 0,
+            inProgress ?? song.currentUserRating ?? song.groupAverage ?? 0,
         };
       }, {} as Record<number, number>),
-    [songStats, state.ratings, filters.groupId]
+    [songStats, state.ratings]
   );
 
   const updateReviewState = (updates: Partial<ReviewState>) => {
@@ -72,6 +69,9 @@ const ReviewsTable = ({
     }));
   };
 
+  const isCurrentUserSelected = filters.userId === String(user?.id);
+  const isUserView = filters.showUserOnly || isCurrentUserSelected;
+
   const contentsRef = useRef<Record<number, string>>({});
 
   const handleRatingChange = useCallback(
@@ -86,7 +86,7 @@ const ReviewsTable = ({
 
       if (!songData) return;
 
-      const isNewReview = !songData.userReviewId;
+      const isNewReview = !songData.currentUserReviewId;
       const tempReviewCount = songData.reviewCount + (isNewReview ? 1 : 0);
 
       // Optimistic update
@@ -100,11 +100,9 @@ const ReviewsTable = ({
 
         const updatedReview = {
           ...(existingIndex >= 0 ? existingReviews[existingIndex] : {}),
-          id: songData.userReviewId || Date.now(), // Use real ID if available
+          id: songData.currentUserReviewId || Date.now(), // Use real ID if available
           userId: user!.id,
           songId,
-          groupId:
-            filters.groupId !== "all" ? parseInt(filters.groupId) : undefined,
           rating: stars * 2,
           content: content,
           createdAt: new Date().toISOString(),
@@ -137,25 +135,25 @@ const ReviewsTable = ({
 
       onReviewSubmitted?.({
         ...songData,
-        userRating: rating,
+        currentUserRating: rating,
         reviewCount: tempReviewCount,
-        userReviewId: songData.userReviewId || Date.now(), // Temp ID
+        currentUserReviewId: songData.currentUserReviewId || Date.now(), // Temp ID
       });
 
       try {
-        const method = songData.userReviewId ? "PUT" : "POST";
+        const method = songData.currentUserReviewId ? "PUT" : "POST";
+        const payload: any = {
+          songId,
+          rating,
+          content,
+        };
+
         const response = await fetchWrapper(
-          `/reviews/${songData?.userReviewId || ""}`,
+          `/reviews/${songData?.currentUserReviewId || ""}`,
           {
             method,
             headers: getAuthHeaders(),
-            body: JSON.stringify({
-              songId,
-              rating,
-              content: content,
-              groupId:
-                filters.groupId !== "all" ? parseInt(filters.groupId) : null,
-            }),
+            body: JSON.stringify(payload),
           }
         );
 
@@ -179,8 +177,8 @@ const ReviewsTable = ({
         // Final update with actual data
         onReviewSubmitted?.({
           ...songData,
-          userRating: rating,
-          userReviewId: response.id,
+          currentUserRating: rating,
+          currentUserReviewId: response.id,
           reviewCount: songData.reviewCount + (method === "POST" ? 1 : 0),
         });
       } catch (err) {
@@ -214,14 +212,7 @@ const ReviewsTable = ({
           });
 
           // Filter reviews with content
-          const filteredReviews = response.reviews.filter(
-            (review: UserReview) => {
-              // Always include reviews with ratings in group view
-              if (filters.groupId !== "all") return review.rating > 0;
-              // For public view, require content
-              return review.content.trim() !== "";
-            }
-          );
+          const filteredReviews = response.reviews;
 
           // Check if user has existing review
           const userReview = response.reviews.find(
@@ -294,18 +285,27 @@ const ReviewsTable = ({
             <th className="px-4 py-3.5 text-left text-sm font-semibold text-gray-900">
               Song
             </th>
-            {filters.userId === "all" && !filters.showUserOnly && (
+
+            {/* Public Avg */}
+            {!filters.showUserOnly && filters.userId === "all" ? (
               <th className="px-4 py-3.5 text-right text-sm font-semibold text-gray-900">
                 Public Avg
               </th>
+            ) : (
+              <th className="px-4 py-3.5 text-right text-sm" />
             )}
-            {filters.groupId !== "all" && (
+
+            {/* Group Avg */}
+            {filters.groupId !== "all" ? (
               <th className="px-4 py-3.5 text-right text-sm font-semibold text-gray-900">
                 Group Avg
               </th>
+            ) : (
+              <th className="px-4 py-3.5 text-right text-sm" />
             )}
+
             <th className="px-4 py-3.5 text-right text-sm font-semibold text-gray-900">
-              {"Your Rating"}
+              Your Rating
             </th>
             <th className="px-4 py-3.5 text-right text-sm font-semibold text-gray-900">
               Actions

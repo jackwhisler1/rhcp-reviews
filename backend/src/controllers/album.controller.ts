@@ -52,6 +52,9 @@ export const getAlbumSongStatsController = asyncHandler(
       const albumId = Number(req.params.albumId);
       const groupId = req.query.groupId ? Number(req.query.groupId) : undefined;
       const userId = req.query.userId ? Number(req.query.userId) : undefined;
+      const selectedUserId = req.query.selectedUserId
+        ? Number(req.query.selectedUserId)
+        : undefined;
 
       console.log(
         `Fetching album stats - albumId: ${albumId}, groupId: ${groupId}, userId: ${userId}, authenticated: ${!!req.user}`
@@ -64,6 +67,7 @@ export const getAlbumSongStatsController = asyncHandler(
           albumId,
           groupId: undefined,
           userId,
+          selectedUserId,
         });
         return res.json(stats); // Using return to prevent further execution
       }
@@ -123,12 +127,16 @@ export const getAlbumSongStatsController = asyncHandler(
           console.log("Group is public, proceeding with request");
         }
       }
+      console.log(
+        `selectedUserId from query: ${selectedUserId}, type: ${typeof selectedUserId}`
+      );
 
       // If we got here, the user has the necessary permissions
       console.log("Fetching album stats with permissions validated");
       const stats = await getAlbumSongStatsService({
         albumId,
         groupId,
+        selectedUserId,
         userId: req.query.userFilter === "true" ? req.user?.id : userId,
       });
 

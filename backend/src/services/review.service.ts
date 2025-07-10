@@ -21,6 +21,7 @@ interface ReviewFilters {
 // Type for parsed filter values
 interface ParsedFilters {
   groupIds?: number[];
+  groupMemberIds?: number[];
   minRating?: number;
   maxRating?: number;
   startDate?: Date;
@@ -34,7 +35,6 @@ export const createReviewService = async (data: {
   content?: string;
   rating: number;
   songId: number;
-  groupId?: number;
   userId: number;
 }) => {
   // Validation
@@ -50,19 +50,6 @@ export const createReviewService = async (data: {
   });
   if (!song) throw new NotFoundError("Song not found");
 
-  // Verify group membership if provided
-  if (data.groupId) {
-    const membership = await prisma.userGroup.findUnique({
-      where: {
-        userId_groupId: {
-          userId: data.userId,
-          groupId: data.groupId,
-        },
-      },
-    });
-    if (!membership) throw new ForbiddenError("Not a group member");
-  }
-
   // Create review
   return prisma.review.create({
     data: {
@@ -70,13 +57,12 @@ export const createReviewService = async (data: {
       rating: data.rating,
       songId: data.songId,
       userId: data.userId,
-      groupId: data.groupId,
     },
   });
 };
 
 export const getReviewsService = async (filters: ReviewFilters) => {
-  const parsed = parseFilters(filters);
+  const parsed = await parseFilters(filters);
 
   const where: Prisma.ReviewWhereInput = buildWhereClause(parsed);
 
@@ -86,7 +72,6 @@ export const getReviewsService = async (filters: ReviewFilters) => {
       include: {
         author: { select: { username: true, image: true } },
         song: true,
-        group: { select: { name: true, id: true } },
       },
       take: parsed.limit,
       skip: (parsed.page - 1) * parsed.limit,
@@ -167,12 +152,10 @@ export const deleteReviewService = async (reviewId: number, userId: number) => {
 
 export const getSongReviewsService = async (
   songId: number,
-  groupId?: number,
   userId?: number
 ) => {
   const where: Prisma.ReviewWhereInput = {
     songId,
-    ...(groupId ? { groupId } : {}),
   };
 
   const reviews = await prisma.review.findMany({
@@ -196,43 +179,59 @@ export const getSongReviewsService = async (
 };
 
 // Helper function to parse filter parameters
-const parseFilters = (filters: ReviewFilters): ParsedFilters => {
+const parseFilters = async (filters: ReviewFilters): Promise<ParsedFilters> => {
+  const groupIds = filters.groups?.split(",").map(Number).filter(Boolean);
+
+  // Get userIds for those groups
+  let groupMemberIds: number[] = [];
+  if (groupIds && groupIds.length > 0) {
+    const memberships = await prisma.userGroup.findMany({
+      where: { groupId: { in: groupIds } },
+      select: { userId: true },
+    });
+    groupMemberIds = memberships.map((m) => m.userId);
+  }
+
   return {
-    groupIds: filters.groups?.split(",").map(Number).filter(Boolean),
     minRating: filters.minRating ? Number(filters.minRating) : undefined,
     maxRating: filters.maxRating ? Number(filters.maxRating) : undefined,
     startDate: parseDate(filters.startDate),
     endDate: parseDate(filters.endDate),
-    limit: Math.min(Number(filters.limit) || 20, 100), // Max 100 per page
+    limit: Math.min(Number(filters.limit) || 20, 100),
     page: Math.max(Number(filters.page) || 1, 1),
     userId: filters.userId,
+    groupIds,
+    groupMemberIds,
   };
 };
 
 // Helper function to build Prisma where clause
 const buildWhereClause = (parsed: ParsedFilters): Prisma.ReviewWhereInput => {
+  const filters: Prisma.ReviewWhereInput[] = [];
+
+  // Filter by group members if applicable
+  if (parsed.groupMemberIds && parsed.groupMemberIds.length > 0) {
+    filters.push({ userId: { in: parsed.groupMemberIds } });
+  }
+
+  if (parsed.minRating !== undefined) {
+    filters.push({ rating: { gte: parsed.minRating } });
+  }
+
+  if (parsed.maxRating !== undefined) {
+    filters.push({ rating: { lte: parsed.maxRating } });
+  }
+
+  if (parsed.startDate !== undefined) {
+    filters.push({ createdAt: { gte: parsed.startDate } });
+  }
+
+  if (parsed.endDate !== undefined) {
+    filters.push({ createdAt: { lte: parsed.endDate } });
+  }
+
   return {
-    AND: [
-      {
-        OR: [
-          { groupId: null }, // Public reviews
-          ...(parsed.groupIds?.length
-            ? [
-                {
-                  group: {
-                    id: { in: parsed.groupIds },
-                    members: { some: { userId: parsed.userId } },
-                  },
-                },
-              ]
-            : []),
-        ],
-      },
-      ...(parsed.minRating ? [{ rating: { gte: parsed.minRating } }] : []),
-      ...(parsed.maxRating ? [{ rating: { lte: parsed.maxRating } }] : []),
-      ...(parsed.startDate ? [{ createdAt: { gte: parsed.startDate } }] : []),
-      ...(parsed.endDate ? [{ createdAt: { lte: parsed.endDate } }] : []),
-    ].filter(Boolean),
+    AND: filters,
   };
 };
 

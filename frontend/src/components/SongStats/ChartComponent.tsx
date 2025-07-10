@@ -10,65 +10,52 @@ interface ChartProps {
 }
 const ChartComponent = React.memo(
   ({ albumTitle, songStats, filters }: ChartProps) => {
-    const isGroupView = filters.groupId !== "all";
-    const isUserView = filters.userId !== "all" || filters.showUserOnly;
-
     // Process the data in a useMemo to prevent unnecessary recalculations
     const { series, categories } = useMemo(() => {
-      // Sort songs by track number for consistent display
       const sortedSongs = [...songStats].sort(
         (a, b) => a.trackNumber - b.trackNumber
       );
+      const categories = sortedSongs.map(
+        (song) => `${song.trackNumber}. ${song.title}`
+      );
 
-      // Extract song titles for x-axis
-      // Include track number for better identification
-      const categories = sortedSongs.map((song) => {
-        // Format: "1. Song Title"
-        return `${song.trackNumber}. ${song.title}`;
-      });
-
-      // Always include public average ratings
       const publicSeries = {
         name: "Public Average",
-        data: sortedSongs.map((song) =>
-          typeof song.publicAverage === "number"
-            ? parseFloat(song.publicAverage.toFixed(1))
-            : null
-        ),
+        data: sortedSongs.map((song) => song.publicAverage ?? null),
         color: "#E53E3E",
       };
 
-      // Conditionally include group ratings if we're in group view
-      const groupSeries = isGroupView
-        ? {
-            name: "Group Average",
-            data: sortedSongs.map((song) =>
-              typeof song.groupAverage === "number"
-                ? parseFloat(song.groupAverage.toFixed(1))
-                : null
-            ),
-            color: "#ECC94B",
-          }
-        : null;
+      const groupSeries =
+        filters.groupId !== "all"
+          ? {
+              name: "Group Average",
+              data: sortedSongs.map((song) => song.groupAverage ?? null),
+              color: "#ECC94B",
+            }
+          : null;
 
-      // Always include user ratings (will show as null if not available)
-      const userSeries = {
-        name: isUserView ? "Your Ratings" : "Selected User",
-        data: sortedSongs.map((song) =>
-          typeof song.userRating === "number"
-            ? parseFloat(song.userRating.toFixed(1))
-            : null
-        ),
+      const currentUserSeries = {
+        name: "Your Ratings",
+        data: sortedSongs.map((song) => song.currentUserRating ?? null),
         color: "#2B6CB0",
       };
 
-      // Build the final series array with only the applicable series
+      const selectedUserSeries =
+        filters.userId !== "all" && !filters.showUserOnly
+          ? {
+              name: "Selected User",
+              data: sortedSongs.map((song) => song.selectedUserRating ?? null),
+              color: "#4FD1C5",
+            }
+          : null;
+
       const seriesArray = [publicSeries];
       if (groupSeries) seriesArray.push(groupSeries);
-      seriesArray.push(userSeries);
+      if (selectedUserSeries) seriesArray.push(selectedUserSeries as any);
+      seriesArray.push(currentUserSeries as any); // Always include your own last for visibility
 
       return { series: seriesArray, categories };
-    }, [songStats, isGroupView, isUserView, filters]);
+    }, [songStats, filters]);
 
     // Calculate dynamic height based on number of songs
     const chartHeight = useMemo(() => {

@@ -58,23 +58,28 @@ const ReviewRow: React.FC<ReviewRowProps> = ({
         expandedSongId === song.id ? "bg-gray-50" : ""
       }`}
     >
-      {/* Basic song info */}
       <td className="px-3 py-2 text-sm">{song.trackNumber}</td>
       <td className="px-3 py-2 text-sm font-medium">{song.title}</td>
 
-      {/* Conditional averages */}
-      {!isUserView && (
+      {/* Public Avg or empty cell */}
+      {!isUserView ? (
         <td className="px-3 py-2 text-sm text-right">
           {song.publicAverage.toFixed(1)}
         </td>
+      ) : (
+        <td className="px-3 py-2 text-sm text-right"></td>
       )}
-      {isGroupView && (
+
+      {/* Group Avg or empty cell */}
+      {isGroupView ? (
         <td className="px-3 py-2 text-sm text-right">
           {(song.groupAverage || 0).toFixed(1)}
         </td>
+      ) : (
+        <td className="px-3 py-2 text-sm text-right"></td>
       )}
 
-      {/* Interactive rating */}
+      {/* Your Rating */}
       <td className="px-2 py-2 text-sm">
         {isAuthenticated ? (
           <RatingComponent
@@ -83,10 +88,11 @@ const ReviewRow: React.FC<ReviewRowProps> = ({
             isSubmitting={submitting[song.id]}
           />
         ) : (
-          <div>{song.userRating?.toFixed(1) || "-"}</div>
+          <div>{song.currentUserRating?.toFixed(1) || "-"}</div>
         )}
       </td>
 
+      {/* Actions */}
       <td className="px-3 py-2 text-right">
         <div className="flex gap-2 justify-end">
           <button
