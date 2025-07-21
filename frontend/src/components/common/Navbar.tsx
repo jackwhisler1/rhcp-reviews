@@ -24,18 +24,6 @@ const UserDropdown = () => {
           <MenuItem>
             {({ active }: { active: boolean }) => (
               <Link
-                to="/profile"
-                className={`${
-                  active ? "bg-gray-100 text-gray-900" : "text-gray-700"
-                } block px-4 py-2 text-sm`}
-              >
-                Profile
-              </Link>
-            )}
-          </MenuItem>
-          <MenuItem>
-            {({ active }: { active: boolean }) => (
-              <Link
                 to="/groups"
                 className={`${
                   active ? "bg-gray-100 text-gray-900" : "text-gray-700"
@@ -44,23 +32,11 @@ const UserDropdown = () => {
                 Groups
               </Link>
             )}
-          </MenuItem>
+          </MenuItem>{" "}
           <MenuItem>
             {({ active }: { active: boolean }) => (
               <Link
-                to="/dashboard"
-                className={`${
-                  active ? "bg-gray-100 text-gray-900" : "text-gray-700"
-                } block px-4 py-2 text-sm`}
-              >
-                Dashboard
-              </Link>
-            )}
-          </MenuItem>
-          <MenuItem>
-            {({ active }: { active: boolean }) => (
-              <Link
-                to="/settings"
+                to="/me"
                 className={`${
                   active ? "bg-gray-100 text-gray-900" : "text-gray-700"
                 } block px-4 py-2 text-sm`}

@@ -118,6 +118,30 @@ export const getCurrentUser = () => {
   }
 };
 
+export const updateUser = async (data: {
+  username?: string;
+  email?: string;
+  password?: string;
+  image?: string;
+}) => {
+  const sanitizedData = sanitizeInput(data);
+  const response = await api.patch("/auth/me", sanitizedData);
+  const updatedUser = response.data;
+  const current = getCurrentUser();
+  if (current && updatedUser) {
+    storeAuthData({
+      user: {
+        ...current,
+        ...updatedUser,
+      },
+      token: current.token,
+      refreshToken: current.refreshToken,
+    });
+  }
+
+  return response.data;
+};
+
 // Function to check if the token is valid
 export const checkStoredToken = () => {
   try {
