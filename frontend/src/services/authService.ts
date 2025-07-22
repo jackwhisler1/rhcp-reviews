@@ -60,6 +60,7 @@ export const storeAuthData = (userData: AuthResponse) => {
       id: userData.user.id,
       email: userData.user.email,
       username: userData.user.username,
+      avatarColor: userData.user.avatarColor,
       image: userData.user.image,
       token: userData.token,
       refreshToken: userData.refreshToken,
@@ -123,6 +124,7 @@ export const updateUser = async (data: {
   email?: string;
   password?: string;
   image?: string;
+  avatarColor?: string;
 }) => {
   const sanitizedData = sanitizeInput(data);
   const response = await api.patch("/auth/me", sanitizedData);
@@ -250,6 +252,7 @@ export const refreshAuthToken = async () => {
         email: user.email,
         username: user.username,
         image: user.image,
+        avatarColor: user.avatarColor,
       },
       token: response.data.token,
       refreshToken: response.data.refreshToken,

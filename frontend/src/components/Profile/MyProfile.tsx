@@ -7,6 +7,7 @@ const MyProfile = () => {
     username: "",
     email: "",
     image: "",
+    avatarColor: "",
     password: "",
   });
   const [status, setStatus] = useState<"idle" | "saving" | "saved" | "error">(
@@ -16,11 +17,13 @@ const MyProfile = () => {
   useEffect(() => {
     const fetchUser = async () => {
       const user = await getCurrentUser();
+      console.log(user, "user in myprofile");
       if (user) {
         setFormData({
           username: user.username || "",
           email: user.email || "",
           image: user.image || "",
+          avatarColor: user.avatarColor,
           password: "", // don’t pre-fill
         });
       }
@@ -64,9 +67,14 @@ const MyProfile = () => {
           className="input"
           placeholder="Email"
         />
+
         <AvatarSelector
-          onSelect={(url) => setFormData((prev) => ({ ...prev, image: url }))}
+          selectedColor={formData.avatarColor}
+          onSelect={(_, color) =>
+            setFormData((prev) => ({ ...prev, avatarColor: color }))
+          }
         />
+
         <input
           name="password"
           type="password"

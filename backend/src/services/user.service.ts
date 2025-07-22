@@ -14,6 +14,7 @@ export const registerUserService = async (data: {
   email: string;
   username: string;
   password: string;
+  avatarColor?: string; // optional
 }) => {
   if (data.password.length < 8) {
     throw new ValidationError("Password must be at least 8 characters", {
@@ -29,12 +30,13 @@ export const registerUserService = async (data: {
         email: data.email,
         username: data.username,
         password: hashedPassword,
+        avatarColor: data.avatarColor ?? undefined,
       },
       select: {
         id: true,
         email: true,
         username: true,
-        image: true,
+        avatarColor: true,
       },
     });
   } catch (error: any) {
@@ -58,7 +60,7 @@ export const loginUserService = async (email: string, password: string) => {
       password: true,
       email: true,
       username: true,
-      image: true,
+      avatarColor: true,
     },
   });
 
@@ -88,7 +90,7 @@ export const loginUserService = async (email: string, password: string) => {
       id: user.id,
       email: user.email,
       username: user.username,
-      image: user.image,
+      avatarColor: user.avatarColor,
     },
   };
 };
@@ -101,6 +103,7 @@ export const getCurrentUserService = async (userId: number) => {
       email: true,
       username: true,
       image: true,
+      avatarColor: true,
       groups: {
         select: {
           group: {
@@ -126,6 +129,7 @@ export const updateUserService = async (
     email: string;
     password: string;
     image: string;
+    avatarColor: string;
   }>
 ) => {
   if (data.password) {
@@ -140,6 +144,7 @@ export const updateUserService = async (
       email: true,
       username: true,
       image: true,
+      avatarColor: true,
     },
   });
 };
@@ -165,7 +170,7 @@ export const refreshTokenService = async (refreshToken: string) => {
 
     // Generate new tokens with fresh expiration
     const newAccessToken = jwt.sign({ id: user.id }, process.env.JWT_SECRET, {
-      expiresIn: "15m",
+      expiresIn: "25m",
     });
 
     const newRefreshToken = jwt.sign({ id: user.id }, process.env.JWT_SECRET, {
