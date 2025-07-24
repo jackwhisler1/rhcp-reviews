@@ -7,7 +7,7 @@ import {
   ValidationError,
   NotFoundError,
 } from "../errors/customErrors.js";
-
+import { sendEmail } from "../middleware/auth.js";
 const saltRounds = 10;
 
 export const registerUserService = async (data: {
@@ -128,13 +128,22 @@ export const updateUserService = async (
     username: string;
     email: string;
     password: string;
+    newPassword: string;
     image: string;
     avatarColor: string;
   }>
 ) => {
-  if (data.password) {
-    data.password = await bcrypt.hash(data.password, saltRounds);
+  if (data.newPassword) {
+    const user = await prisma.user.findUnique({ where: { id: userId } });
+    if (!user) throw new NotFoundError("User not found");
+
+    const valid = await bcrypt.compare(data.password ?? "", user.password);
+    if (!valid) throw new AuthenticationError("Incorrect current password");
+
+    data.password = await bcrypt.hash(data.newPassword, saltRounds);
   }
+
+  delete data.newPassword;
 
   return prisma.user.update({
     where: { id: userId },
@@ -197,6 +206,38 @@ export const refreshTokenService = async (refreshToken: string) => {
     throw new AuthenticationError("Token refresh failed");
   }
 };
+
+export const forgotPasswordService = async (email: string) => {
+  const user = await prisma.user.findUnique({ where: { email } });
+  if (!user) return;
+  if (!process.env.JWT_SECRET) {
+    throw new Error("JWT_SECRET environment variable missing");
+  }
+
+  const accessToken = jwt.sign({ id: user.id }, process.env.JWT_SECRET, {
+    expiresIn: "30m",
+  });
+  const resetLink = `${process.env.FRONTEND_URL}/reset-password?token=${accessToken}`;
+  await sendEmail({
+    to: user.email,
+    subject: "Reset your password",
+    text: `Click here to reset your password: ${resetLink}`,
+    html: `<p>Click <a href="${resetLink}">here</a> to reset your password. This link will expire in 30 minutes.</p>`,
+  });
+};
+
+export const resetPasswordService = async (
+  token: string,
+  newPassword: string
+) => {
+  const decoded = jwt.verify(token, process.env.JWT_SECRET!) as { id: number };
+  const hashed = await bcrypt.hash(newPassword, saltRounds);
+  return prisma.user.update({
+    where: { id: decoded.id },
+    data: { password: hashed },
+  });
+};
+
 export const deleteUserService = async (userId: number) => {
   return prisma.user.delete({
     where: { id: userId },

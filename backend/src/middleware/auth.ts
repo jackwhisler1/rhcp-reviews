@@ -2,6 +2,7 @@ import { Request, Response, NextFunction } from "express";
 import jwt from "jsonwebtoken";
 import prisma from "../db/prisma.js";
 import { AuthenticationError } from "../errors/customErrors.js";
+import nodemailer from "nodemailer";
 
 declare global {
   namespace Express {
@@ -140,3 +141,31 @@ export const optionalAuthenticate = async (
     next(new AuthenticationError("Invalid authentication token"));
   }
 };
+
+const transporter = nodemailer.createTransport({
+  service: "Gmail",
+  auth: {
+    user: process.env.EMAIL_USER,
+    pass: process.env.EMAIL_PASSWORD,
+  },
+});
+
+export async function sendEmail({
+  to,
+  subject,
+  text,
+  html,
+}: {
+  to: string;
+  subject: string;
+  text: string;
+  html?: string;
+}) {
+  await transporter.sendMail({
+    from: `"Red Hot Takes" <${process.env.EMAIL_USER}>`,
+    to,
+    subject,
+    text,
+    html,
+  });
+}

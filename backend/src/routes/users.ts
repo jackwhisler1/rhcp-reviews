@@ -6,6 +6,8 @@ import {
   updateUserController,
   deleteUserController,
   refreshTokenController,
+  forgotPasswordController,
+  resetPasswordController,
 } from "../controllers/user.controller.js";
 import { validate } from "../middleware/validate.js";
 import {
@@ -28,6 +30,8 @@ router.patch(
   validate(updateUserSchema._def.schema),
   updateUserController
 );
+router.post("/forgot-password", authenticate, forgotPasswordController);
+router.post("/reset-password", authenticate, resetPasswordController);
 
 router.delete("/me", authenticate, deleteUserController);
 
