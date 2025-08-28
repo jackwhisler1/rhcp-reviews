@@ -1,6 +1,7 @@
 import DOMPurify from "dompurify";
 import { AuthFormData, AuthResponse, User } from "../types/auth-types";
 import axios from "axios";
+import { fetchWrapper } from "./api";
 
 // Configure secure axios instance
 const api = axios.create({
@@ -300,6 +301,45 @@ api.interceptors.response.use(
     return Promise.reject(error);
   }
 );
+
+export const sendPasswordResetEmail = async (email: string) => {
+  try {
+    console.log(`Sending forgot password email to ${email}`);
+    const options: RequestInit = {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ email }), // include the email in the POST body
+    };
+    console.log(options);
+
+    const response = await fetchWrapper(`/auth/forgot-password`, options);
+    return response.data;
+  } catch (error) {
+    console.error(`Error with forgot password operation`, error);
+    throw error;
+  }
+};
+
+export const resetPassword = async (token: string, newPassword: string) => {
+  try {
+    console.log(
+      "Resetting password with token:",
+      token.substring(0, 15) + "..."
+    );
+    const options: RequestInit = {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ token, newPassword }),
+    };
+    const response = await fetchWrapper(`/auth/reset-password`, options);
+    return response;
+  } catch (error) {
+    console.error("Error with reset password operation", error);
+    throw error;
+  }
+};
 
 // Initialize auth state from session storage on module load
 (function initAuthState() {

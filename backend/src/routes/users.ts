@@ -30,8 +30,8 @@ router.patch(
   validate(updateUserSchema._def.schema),
   updateUserController
 );
-router.post("/forgot-password", authenticate, forgotPasswordController);
-router.post("/reset-password", authenticate, resetPasswordController);
+router.post("/forgot-password", forgotPasswordController);
+router.post("/reset-password", resetPasswordController);
 
 router.delete("/me", authenticate, deleteUserController);
 

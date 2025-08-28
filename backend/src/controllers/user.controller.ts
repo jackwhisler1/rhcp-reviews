@@ -115,7 +115,7 @@ export const forgotPasswordController = asyncHandler(
   async (req: Request, res: Response) => {
     try {
       await forgotPasswordService(req.body.email);
-      res.sendStatus(200).json({ message: "Email sent" });
+      res.status(200).json({ message: "Email sent" });
     } catch (e) {
       console.error(e);
     }
@@ -127,7 +127,7 @@ export const resetPasswordController = asyncHandler(
     try {
       const { token, newPassword } = req.body;
       await resetPasswordService(token, newPassword);
-      res.sendStatus(200).json({ message: "Password reset" });
+      res.status(200).json({ message: "Password reset" });
     } catch (e) {
       console.error(e);
     }
