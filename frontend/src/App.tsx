@@ -12,6 +12,9 @@ import GroupsPage from "./pages/Groups";
 import GroupDetailPage from "./pages/GroupDetail";
 import CreateGroupPage from "./pages/CreateGroup";
 import { ReactNode } from "react";
+import MyProfilePage from "./pages/MyProfile";
+import ForgotPasswordPage from "./pages/ForgotPassword";
+import ResetPasswordPage from "./pages/ResetPassword";
 
 // Fixed ProtectedRoute component with proper TypeScript types
 interface ProtectedRouteProps {
@@ -47,6 +50,9 @@ function App() {
           <Route path="/login" element={<LoginPage />} />
           <Route path="/register" element={<RegisterPage />} />
           <Route path="/" element={<Home />} />
+          <Route path="/me" element={<MyProfilePage />} />
+          <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+          <Route path="/reset-password" element={<ResetPasswordPage />} />
 
           {/* Group routes */}
           <Route

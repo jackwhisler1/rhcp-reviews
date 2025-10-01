@@ -6,6 +6,8 @@ import {
   deleteUserService,
   refreshTokenService,
   updateUserService,
+  forgotPasswordService,
+  resetPasswordService,
 } from "../services/user.service.js";
 import asyncHandler from "../middleware/asyncRouteHandler.js";
 import { UpdateUserInput } from "../validators/user.validator.js";
@@ -96,7 +98,6 @@ export const updateUserController = asyncHandler(
   async (req: Request, res: Response) => {
     const updateData: UpdateUserInput = req.body;
 
-    // Use the service to update user data
     const user = await updateUserService(req.user!.id, updateData);
 
     res.json(user);
@@ -107,5 +108,28 @@ export const deleteUserController = asyncHandler(
   async (req: Request, res: Response) => {
     await deleteUserService(req.user!.id);
     res.sendStatus(204);
+  }
+);
+
+export const forgotPasswordController = asyncHandler(
+  async (req: Request, res: Response) => {
+    try {
+      await forgotPasswordService(req.body.email);
+      res.status(200).json({ message: "Email sent" });
+    } catch (e) {
+      console.error(e);
+    }
+  }
+);
+
+export const resetPasswordController = asyncHandler(
+  async (req: Request, res: Response) => {
+    try {
+      const { token, newPassword } = req.body;
+      await resetPasswordService(token, newPassword);
+      res.status(200).json({ message: "Password reset" });
+    } catch (e) {
+      console.error(e);
+    }
   }
 );

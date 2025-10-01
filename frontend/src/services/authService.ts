@@ -1,6 +1,7 @@
 import DOMPurify from "dompurify";
 import { AuthFormData, AuthResponse, User } from "../types/auth-types";
 import axios from "axios";
+import { fetchWrapper } from "./api";
 
 // Configure secure axios instance
 const api = axios.create({
@@ -60,6 +61,7 @@ export const storeAuthData = (userData: AuthResponse) => {
       id: userData.user.id,
       email: userData.user.email,
       username: userData.user.username,
+      avatarColor: userData.user.avatarColor,
       image: userData.user.image,
       token: userData.token,
       refreshToken: userData.refreshToken,
@@ -116,6 +118,31 @@ export const getCurrentUser = () => {
     console.error("Error retrieving current user:", error);
     return null;
   }
+};
+
+export const updateUser = async (data: {
+  username?: string;
+  email?: string;
+  password?: string;
+  image?: string;
+  avatarColor?: string;
+}) => {
+  const sanitizedData = sanitizeInput(data);
+  const response = await api.patch("/auth/me", sanitizedData);
+  const updatedUser = response.data;
+  const current = getCurrentUser();
+  if (current && updatedUser) {
+    storeAuthData({
+      user: {
+        ...current,
+        ...updatedUser,
+      },
+      token: current.token,
+      refreshToken: current.refreshToken,
+    });
+  }
+
+  return response.data;
 };
 
 // Function to check if the token is valid
@@ -226,6 +253,7 @@ export const refreshAuthToken = async () => {
         email: user.email,
         username: user.username,
         image: user.image,
+        avatarColor: user.avatarColor,
       },
       token: response.data.token,
       refreshToken: response.data.refreshToken,
@@ -273,6 +301,45 @@ api.interceptors.response.use(
     return Promise.reject(error);
   }
 );
+
+export const sendPasswordResetEmail = async (email: string) => {
+  try {
+    console.log(`Sending forgot password email to ${email}`);
+    const options: RequestInit = {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ email }), // include the email in the POST body
+    };
+    console.log(options);
+
+    const response = await fetchWrapper(`/auth/forgot-password`, options);
+    return response.data;
+  } catch (error) {
+    console.error(`Error with forgot password operation`, error);
+    throw error;
+  }
+};
+
+export const resetPassword = async (token: string, newPassword: string) => {
+  try {
+    console.log(
+      "Resetting password with token:",
+      token.substring(0, 15) + "..."
+    );
+    const options: RequestInit = {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ token, newPassword }),
+    };
+    const response = await fetchWrapper(`/auth/reset-password`, options);
+    return response;
+  } catch (error) {
+    console.error("Error with reset password operation", error);
+    throw error;
+  }
+};
 
 // Initialize auth state from session storage on module load
 (function initAuthState() {

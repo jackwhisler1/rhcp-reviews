@@ -147,6 +147,14 @@ const AuthForm: React.FC<AuthFormProps> = ({
               {isLogin ? "Sign Up" : "Sign In"}
             </a>
           </div>
+          <div className="flex justify-center gap-2 items-center mt-4">
+            <a
+              href={"/forgot-password"}
+              className="text-xs hover:text-blood-red"
+            >
+              {"Forgot Password?"}
+            </a>
+          </div>
         </form>
       </div>
     </div>
