@@ -38,7 +38,7 @@ export default function AvatarSelector({
         className="w-16 h-16 rounded-full flex items-center justify-center"
         style={{ backgroundColor: color }}
       >
-        <PepperAvatar className="w-12 h-12 text-white" style={{ color }} />
+        <PepperAvatar className="w-12 h-12" />
       </div>
 
       <div className="flex gap-2 flex-wrap">

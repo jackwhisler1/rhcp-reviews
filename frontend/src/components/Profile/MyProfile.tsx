@@ -21,7 +21,6 @@ const MyProfile = () => {
   useEffect(() => {
     const fetchUser = async () => {
       const user = await getCurrentUser();
-      console.log(user, "user in myprofile");
       if (user) {
         setFormData({
           username: user.username || "",
@@ -36,6 +35,22 @@ const MyProfile = () => {
     };
     fetchUser();
   }, []);
+
+  // Auto-dismiss save/error messages
+  useEffect(() => {
+    let timeoutId: NodeJS.Timeout;
+
+    if (status === "saved" || status === "error") {
+      timeoutId = setTimeout(() => {
+        setStatus("idle");
+      }, 3000); // 3 seconds
+    }
+
+    // Cleanup function to clear timeout
+    return () => {
+      if (timeoutId) clearTimeout(timeoutId);
+    };
+  }, [status]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -74,103 +89,151 @@ const MyProfile = () => {
   };
 
   return (
-    <div className="flex flex-col min-h-screen items-center px-4">
-      <h2 className="text-xl font-bold mb-4">Settings</h2>
-      <form onSubmit={handleSubmit} className="space-y-4">
-        <label htmlFor="forName" className="block text-sm mb-2">
-          Name
-        </label>
-        <input
-          name="username"
-          value={formData.username}
-          onChange={handleChange}
-          className="input"
-          placeholder="Username"
-        />
-        <label htmlFor="forEmail" className="block text-sm mb-2">
-          Email
-        </label>
-        <input
-          name="email"
-          type="email"
-          value={formData.email}
-          onChange={handleChange}
-          className="input"
-          placeholder="Email"
-        />{" "}
-        <AvatarSelector
-          selectedColor={formData.avatarColor}
-          onSelect={(_, color) =>
-            setFormData((prev) => ({ ...prev, avatarColor: color }))
-          }
-        />
-        {!showChangePassword && (
-          <button
-            className="w-full py-3 px-4 bg-cornell-red-2 text-white-smoke  hover:bg-blood-red font-medium rounded-sm transition-colors"
-            onClick={() => setShowChangePassword(true)}
-          >
-            Change Password
-          </button>
+    <div className="flex flex-col items-center justify-center px-4">
+      <div className="w-full max-w-md p-6 bg-white-smoke rounded-md shadow-lg">
+        <h2 className="mb-4 text-night text-lg font-semibold text-center">
+          Profile Settings
+        </h2>
+
+        {/* Status Messages */}
+        {status === "saved" && (
+          <div className="mb-4 text-green-600 text-center">
+            Profile updated successfully!
+          </div>
         )}
-        {showChangePassword && (
-          <>
-            <label
-              htmlFor="forPassword"
-              className="block text-sm mb-2 text-eerie-black"
-            >
-              Old Password
-            </label>
-            <input
-              name="oldPassword"
-              type="password"
-              value={formData.oldPassword}
-              onChange={handleChange}
-              className="input"
-            />{" "}
-            <Link
-              to="/forgot-password"
-              className="text-sm text-blue-600 hover:underline"
-            >
-              Forgot password?
-            </Link>
-            <label
-              htmlFor="forPassword"
-              className="block text-sm mb-2 text-eerie-black"
-            >
-              New Password
-            </label>
-            <input
-              name="newPassword"
-              type="password"
-              value={formData.newPassword}
-              onChange={handleChange}
-              className="input"
-            />{" "}
-            <label
-              htmlFor="forPassword"
-              className="block text-sm mb-2 text-eerie-black"
-            >
-              Confirm New Password
-            </label>
-            <input
-              name="confirmPassword"
-              type="password"
-              value={formData.confirmPassword}
-              onChange={handleChange}
-              className="input"
-            />{" "}
-          </>
-        )}
-        <div>
-          <button type="submit" className="btn">
-            Save
-          </button>
-        </div>
-        {status === "saved" && <p className="text-green-600">Saved!</p>}
         {status === "error" && (
-          <p className="text-red-600">Something went wrong.</p>
+          <div className="mb-4 text-imperial-red text-center">
+            {showChangePassword &&
+            formData.newPassword !== formData.confirmPassword
+              ? "Passwords do not match"
+              : "Something went wrong. Please try again."}
+          </div>
         )}
-      </form>
+
+        <form onSubmit={handleSubmit} className="space-y-4">
+          {/* Username Input */}
+          <div>
+            <label htmlFor="username" className="block text-sm mb-2">
+              Username
+            </label>
+            <input
+              id="username"
+              name="username"
+              type="text"
+              value={formData.username}
+              onChange={handleChange}
+              className="py-3 px-4 block w-full border border-silver rounded-sm text-sm focus:border-cornell-red focus:ring-0"
+              required
+            />
+          </div>
+
+          {/* Email Input */}
+          <div>
+            <label htmlFor="email" className="block text-sm mb-2">
+              Email
+            </label>
+            <input
+              id="email"
+              name="email"
+              type="email"
+              value={formData.email}
+              onChange={handleChange}
+              className="py-3 px-4 block w-full border border-silver rounded-sm text-sm focus:border-cornell-red focus:ring-0"
+              required
+            />
+          </div>
+
+          {/* Avatar Selector */}
+          <div>
+            <label className="block text-sm mb-2">Avatar</label>
+            <AvatarSelector
+              selectedColor={formData.avatarColor}
+              onSelect={(_, color) =>
+                setFormData((prev) => ({ ...prev, avatarColor: color }))
+              }
+            />
+          </div>
+
+          {/* Change Password Toggle */}
+          {!showChangePassword && (
+            <button
+              type="button"
+              onClick={() => setShowChangePassword(true)}
+              className="w-full py-3 px-4 bg-gray-200 text-gray-800 hover:bg-gray-300 font-medium rounded-sm transition-colors"
+            >
+              Change Password
+            </button>
+          )}
+
+          {/* Password Change Section */}
+          {showChangePassword && (
+            <>
+              <div>
+                <label htmlFor="oldPassword" className="block text-sm mb-2">
+                  Current Password
+                </label>
+                <input
+                  id="oldPassword"
+                  name="oldPassword"
+                  type="password"
+                  value={formData.oldPassword}
+                  onChange={handleChange}
+                  className="py-3 px-4 block w-full border border-silver rounded-sm text-sm focus:border-cornell-red focus:ring-0"
+                  required
+                />
+              </div>
+
+              <div>
+                <label htmlFor="newPassword" className="block text-sm mb-2">
+                  New Password
+                </label>
+                <input
+                  id="newPassword"
+                  name="newPassword"
+                  type="password"
+                  value={formData.newPassword}
+                  onChange={handleChange}
+                  className="py-3 px-4 block w-full border border-silver rounded-sm text-sm focus:border-cornell-red focus:ring-0"
+                  required
+                />
+              </div>
+
+              <div>
+                <label htmlFor="confirmPassword" className="block text-sm mb-2">
+                  Confirm New Password
+                </label>
+                <input
+                  id="confirmPassword"
+                  name="confirmPassword"
+                  type="password"
+                  value={formData.confirmPassword}
+                  onChange={handleChange}
+                  className="py-3 px-4 block w-full border border-silver rounded-sm text-sm focus:border-cornell-red focus:ring-0"
+                  required
+                />
+              </div>
+
+              <Link
+                to="/forgot-password"
+                className="text-xs hover:text-blood-red block text-right"
+              >
+                Forgot password?
+              </Link>
+            </>
+          )}
+
+          {/* Action Buttons */}
+          <div className="grid my-6">
+            <button
+              type="submit"
+              disabled={status === "saving"}
+              className="w-full py-3 px-4 bg-cornell-red-2 text-white-smoke hover:bg-blood-red font-medium rounded-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {status === "saving" ? "Saving..." : "Save Changes"}
+            </button>
+          </div>
+        </form>
+      </div>
     </div>
   );
 };

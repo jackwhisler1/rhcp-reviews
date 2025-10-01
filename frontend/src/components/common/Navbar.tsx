@@ -5,16 +5,22 @@ import { ReactComponent as Logo } from "../../assets/rht-logo.svg";
 import { Menu, MenuButton, MenuItems, MenuItem } from "@headlessui/react";
 import { ChevronDownIcon } from "@heroicons/react/20/solid";
 import DOMPurify from "dompurify";
-
+import { ReactComponent as PepperAvatar } from "../../assets/pepper-avatar.svg";
 const UserDropdown = () => {
   const currentUser = getCurrentUser();
 
   if (!currentUser) return null;
   const safeUsername = DOMPurify.sanitize(currentUser.username);
-
+  const color = currentUser.avatarColor || "";
   return (
     <Menu as="div" className="relative border-b border-white-smoke">
       <MenuButton className="flex items-center p-2 gap-x-1 text-sm font-semibold hover:bg-white leading-6">
+        <div
+          className="w-7 h-7 rounded-full flex items-center justify-center"
+          style={{ backgroundColor: color }}
+        >
+          <PepperAvatar className="w-5 h-5" />
+        </div>
         <span> {safeUsername}</span>
         <ChevronDownIcon className="h-5 w-5" aria-hidden="true" />
       </MenuButton>
@@ -72,14 +78,7 @@ const Navbar: React.FC = () => {
 
   return (
     <nav className="mx-auto w-full flex items-center justify-between border-b border-gray-200 mt-4 mb-2 p-4 py-6 lg:px-8 select-none">
-      <div className="flex-1 flex items-center">
-        <Link
-          to="/groups"
-          className="text-sm font-semibold leading-6 text-gray-900 hover:text-gray-700 mr-4"
-        >
-          Groups
-        </Link>
-      </div>
+      <div className="flex-1 flex items-center"></div>
 
       <div className="flex justify-center">
         <Link to="/" className="-m-1.5 p-1.5">
