@@ -181,7 +181,18 @@ function setupRoutes() {
       timestamp: new Date().toISOString(),
     });
   });
-
+  // In your server.ts or main Express app file
+  app.use((req, res, next) => {
+    console.log("Incoming Request:", {
+      method: req.method,
+      url: req.url,
+      originalUrl: req.originalUrl,
+      baseUrl: req.baseUrl,
+      path: req.path,
+      query: req.query,
+    });
+    next();
+  });
   // Error handler (must be last)
   app.use((err: Error, req: Request, res: Response, next: NextFunction) => {
     errorHandler(err, req, res, next);

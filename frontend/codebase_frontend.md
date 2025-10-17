@@ -412,6 +412,44 @@ export default BaseContainer;
 
 ```
 
+# components\common\ErrorDisplay.tsx
+
+```tsx
+// components/common/ErrorDisplay.tsx
+import React from "react";
+
+interface ErrorDisplayProps {
+  error: Error | string;
+  onRetry?: () => void;
+}
+
+export const ErrorDisplay: React.FC<ErrorDisplayProps> = ({
+  error,
+  onRetry,
+}) => {
+  const errorMessage =
+    typeof error === "string"
+      ? error
+      : error.message || "An unexpected error occurred";
+
+  return (
+    <div className="bg-red-50 border border-red-200 text-red-800 p-4 rounded-md">
+      <h3 className="font-semibold mb-2">Something went wrong</h3>
+      <p className="mb-4">{errorMessage}</p>
+      {onRetry && (
+        <button
+          onClick={onRetry}
+          className="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700"
+        >
+          Try Again
+        </button>
+      )}
+    </div>
+  );
+};
+
+```
+
 # components\common\ErrorMessage.tsx
 
 ```tsx
@@ -520,16 +558,22 @@ import { ReactComponent as Logo } from "../../assets/rht-logo.svg";
 import { Menu, MenuButton, MenuItems, MenuItem } from "@headlessui/react";
 import { ChevronDownIcon } from "@heroicons/react/20/solid";
 import DOMPurify from "dompurify";
-
+import { ReactComponent as PepperAvatar } from "../../assets/pepper-avatar.svg";
 const UserDropdown = () => {
   const currentUser = getCurrentUser();
 
   if (!currentUser) return null;
   const safeUsername = DOMPurify.sanitize(currentUser.username);
-
+  const color = currentUser.avatarColor || "";
   return (
     <Menu as="div" className="relative border-b border-white-smoke">
       <MenuButton className="flex items-center p-2 gap-x-1 text-sm font-semibold hover:bg-white leading-6">
+        <div
+          className="w-7 h-7 rounded-full flex items-center justify-center"
+          style={{ backgroundColor: color }}
+        >
+          <PepperAvatar className="w-5 h-5" />
+        </div>
         <span> {safeUsername}</span>
         <ChevronDownIcon className="h-5 w-5" aria-hidden="true" />
       </MenuButton>
@@ -587,14 +631,7 @@ const Navbar: React.FC = () => {
 
   return (
     <nav className="mx-auto w-full flex items-center justify-between border-b border-gray-200 mt-4 mb-2 p-4 py-6 lg:px-8 select-none">
-      <div className="flex-1 flex items-center">
-        <Link
-          to="/groups"
-          className="text-sm font-semibold leading-6 text-gray-900 hover:text-gray-700 mr-4"
-        >
-          Groups
-        </Link>
-      </div>
+      <div className="flex-1 flex items-center"></div>
 
       <div className="flex justify-center">
         <Link to="/" className="-m-1.5 p-1.5">
@@ -627,6 +664,38 @@ const Navbar: React.FC = () => {
 };
 
 export default Navbar;
+
+```
+
+# components\common\UnratedBadge.tsx
+
+```tsx
+import React from "react";
+import { ExclamationTriangleIcon } from "@heroicons/react/20/solid";
+
+interface UnratedBadgeProps {
+  className?: string;
+}
+
+const UnratedBadge: React.FC<UnratedBadgeProps> = ({ className = "" }) => {
+  return (
+    <span
+      className={`
+        inline-flex items-center 
+        px-2 py-1 
+        rounded-full 
+        text-xs font-medium
+        bg-yellow-100 text-yellow-800
+        ${className}
+      `}
+    >
+      <ExclamationTriangleIcon className="h-4 w-4 mr-1" />
+      Not Rated
+    </span>
+  );
+};
+
+export default UnratedBadge;
 
 ```
 
@@ -673,7 +742,7 @@ export default function AvatarSelector({
         className="w-16 h-16 rounded-full flex items-center justify-center"
         style={{ backgroundColor: color }}
       >
-        <PepperAvatar className="w-12 h-12 text-white" style={{ color }} />
+        <PepperAvatar className="w-12 h-12" />
       </div>
 
       <div className="flex gap-2 flex-wrap">
@@ -720,7 +789,6 @@ const MyProfile = () => {
   useEffect(() => {
     const fetchUser = async () => {
       const user = await getCurrentUser();
-      console.log(user, "user in myprofile");
       if (user) {
         setFormData({
           username: user.username || "",
@@ -735,6 +803,22 @@ const MyProfile = () => {
     };
     fetchUser();
   }, []);
+
+  // Auto-dismiss save/error messages
+  useEffect(() => {
+    let timeoutId: NodeJS.Timeout;
+
+    if (status === "saved" || status === "error") {
+      timeoutId = setTimeout(() => {
+        setStatus("idle");
+      }, 3000); // 3 seconds
+    }
+
+    // Cleanup function to clear timeout
+    return () => {
+      if (timeoutId) clearTimeout(timeoutId);
+    };
+  }, [status]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -773,108 +857,691 @@ const MyProfile = () => {
   };
 
   return (
-    <div className="flex flex-col min-h-screen items-center px-4">
-      <h2 className="text-xl font-bold mb-4">Settings</h2>
-      <form onSubmit={handleSubmit} className="space-y-4">
-        <label htmlFor="forName" className="block text-sm mb-2">
-          Name
-        </label>
-        <input
-          name="username"
-          value={formData.username}
-          onChange={handleChange}
-          className="input"
-          placeholder="Username"
-        />
-        <label htmlFor="forEmail" className="block text-sm mb-2">
-          Email
-        </label>
-        <input
-          name="email"
-          type="email"
-          value={formData.email}
-          onChange={handleChange}
-          className="input"
-          placeholder="Email"
-        />{" "}
-        <AvatarSelector
-          selectedColor={formData.avatarColor}
-          onSelect={(_, color) =>
-            setFormData((prev) => ({ ...prev, avatarColor: color }))
-          }
-        />
-        {!showChangePassword && (
-          <button
-            className="w-full py-3 px-4 bg-cornell-red-2 text-white-smoke  hover:bg-blood-red font-medium rounded-sm transition-colors"
-            onClick={() => setShowChangePassword(true)}
-          >
-            Change Password
-          </button>
+    <div className="flex flex-col items-center justify-center px-4">
+      <div className="w-full max-w-md p-6 bg-white-smoke rounded-md shadow-lg">
+        <h2 className="mb-4 text-night text-lg font-semibold text-center">
+          Profile Settings
+        </h2>
+
+        {/* Status Messages */}
+        {status === "saved" && (
+          <div className="mb-4 text-green-600 text-center">
+            Profile updated successfully!
+          </div>
         )}
-        {showChangePassword && (
-          <>
-            <label
-              htmlFor="forPassword"
-              className="block text-sm mb-2 text-eerie-black"
-            >
-              Old Password
-            </label>
-            <input
-              name="oldPassword"
-              type="password"
-              value={formData.oldPassword}
-              onChange={handleChange}
-              className="input"
-            />{" "}
-            <Link
-              to="/forgot-password"
-              className="text-sm text-blue-600 hover:underline"
-            >
-              Forgot password?
-            </Link>
-            <label
-              htmlFor="forPassword"
-              className="block text-sm mb-2 text-eerie-black"
-            >
-              New Password
-            </label>
-            <input
-              name="newPassword"
-              type="password"
-              value={formData.newPassword}
-              onChange={handleChange}
-              className="input"
-            />{" "}
-            <label
-              htmlFor="forPassword"
-              className="block text-sm mb-2 text-eerie-black"
-            >
-              Confirm New Password
-            </label>
-            <input
-              name="confirmPassword"
-              type="password"
-              value={formData.confirmPassword}
-              onChange={handleChange}
-              className="input"
-            />{" "}
-          </>
-        )}
-        <div>
-          <button type="submit" className="btn">
-            Save
-          </button>
-        </div>
-        {status === "saved" && <p className="text-green-600">Saved!</p>}
         {status === "error" && (
-          <p className="text-red-600">Something went wrong.</p>
+          <div className="mb-4 text-imperial-red text-center">
+            {showChangePassword &&
+            formData.newPassword !== formData.confirmPassword
+              ? "Passwords do not match"
+              : "Something went wrong. Please try again."}
+          </div>
         )}
-      </form>
+
+        <form onSubmit={handleSubmit} className="space-y-4">
+          {/* Username Input */}
+          <div>
+            <label htmlFor="username" className="block text-sm mb-2">
+              Username
+            </label>
+            <input
+              id="username"
+              name="username"
+              type="text"
+              value={formData.username}
+              onChange={handleChange}
+              className="py-3 px-4 block w-full border border-silver rounded-sm text-sm focus:border-cornell-red focus:ring-0"
+              required
+            />
+          </div>
+
+          {/* Email Input */}
+          <div>
+            <label htmlFor="email" className="block text-sm mb-2">
+              Email
+            </label>
+            <input
+              id="email"
+              name="email"
+              type="email"
+              value={formData.email}
+              onChange={handleChange}
+              className="py-3 px-4 block w-full border border-silver rounded-sm text-sm focus:border-cornell-red focus:ring-0"
+              required
+            />
+          </div>
+
+          {/* Avatar Selector */}
+          <div>
+            <label className="block text-sm mb-2">Avatar</label>
+            <AvatarSelector
+              selectedColor={formData.avatarColor}
+              onSelect={(_, color) =>
+                setFormData((prev) => ({ ...prev, avatarColor: color }))
+              }
+            />
+          </div>
+
+          {/* Change Password Toggle */}
+          {!showChangePassword && (
+            <button
+              type="button"
+              onClick={() => setShowChangePassword(true)}
+              className="w-full py-3 px-4 bg-gray-200 text-gray-800 hover:bg-gray-300 font-medium rounded-sm transition-colors"
+            >
+              Change Password
+            </button>
+          )}
+
+          {/* Password Change Section */}
+          {showChangePassword && (
+            <>
+              <div>
+                <label htmlFor="oldPassword" className="block text-sm mb-2">
+                  Current Password
+                </label>
+                <input
+                  id="oldPassword"
+                  name="oldPassword"
+                  type="password"
+                  value={formData.oldPassword}
+                  onChange={handleChange}
+                  className="py-3 px-4 block w-full border border-silver rounded-sm text-sm focus:border-cornell-red focus:ring-0"
+                  required
+                />
+              </div>
+
+              <div>
+                <label htmlFor="newPassword" className="block text-sm mb-2">
+                  New Password
+                </label>
+                <input
+                  id="newPassword"
+                  name="newPassword"
+                  type="password"
+                  value={formData.newPassword}
+                  onChange={handleChange}
+                  className="py-3 px-4 block w-full border border-silver rounded-sm text-sm focus:border-cornell-red focus:ring-0"
+                  required
+                />
+              </div>
+
+              <div>
+                <label htmlFor="confirmPassword" className="block text-sm mb-2">
+                  Confirm New Password
+                </label>
+                <input
+                  id="confirmPassword"
+                  name="confirmPassword"
+                  type="password"
+                  value={formData.confirmPassword}
+                  onChange={handleChange}
+                  className="py-3 px-4 block w-full border border-silver rounded-sm text-sm focus:border-cornell-red focus:ring-0"
+                  required
+                />
+              </div>
+
+              <Link
+                to="/forgot-password"
+                className="text-xs hover:text-blood-red block text-right"
+              >
+                Forgot password?
+              </Link>
+            </>
+          )}
+
+          {/* Action Buttons */}
+          <div className="grid my-6">
+            <button
+              type="submit"
+              disabled={status === "saving"}
+              className="w-full py-3 px-4 bg-cornell-red-2 text-white-smoke hover:bg-blood-red font-medium rounded-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {status === "saving" ? "Saving..." : "Save Changes"}
+            </button>
+          </div>
+        </form>
+      </div>
     </div>
   );
 };
 
 export default MyProfile;
+
+```
+
+# components\Reviews\GroupFilter.tsx
+
+```tsx
+import { useState } from "react";
+import { Group } from "../../types/rhcp-types";
+
+interface GroupFilterProps {
+  groups: Group[];
+  onFilterChange: (groupId: string | null) => void;
+}
+
+const GroupFilter: React.FC<GroupFilterProps> = ({
+  groups,
+  onFilterChange,
+}) => {
+  const [selectedGroup, setSelectedGroup] = useState<string | null>(null);
+
+  const handleChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const groupId = e.target.value || null;
+    setSelectedGroup(groupId);
+    onFilterChange(groupId);
+  };
+
+  return (
+    <select
+      value={selectedGroup || ""}
+      onChange={handleChange}
+      className="w-full border rounded p-2"
+    >
+      <option value="">All Groups</option>
+      {groups.map((group) => (
+        <option key={group.id} value={group.id}>
+          {group.name}
+        </option>
+      ))}
+    </select>
+  );
+};
+
+```
+
+# components\Reviews\RatingComponent.tsx
+
+```tsx
+import { Rating } from "react-simple-star-rating";
+import { LoadingSpinner } from "../common";
+import { useState, useEffect } from "react";
+
+interface RatingComponentProps {
+  value: number;
+  onSubmit: (stars: number) => void;
+  isSubmitting?: boolean;
+}
+
+const RatingComponent: React.FC<RatingComponentProps> = ({
+  value,
+  onSubmit,
+  isSubmitting,
+}) => {
+  const [localValue, setLocalValue] = useState(value);
+
+  useEffect(() => {
+    setLocalValue(value);
+  }, [value]);
+  return (
+    <div className="relative inline-flex items-center">
+      <Rating
+        onClick={onSubmit}
+        initialValue={localValue / 2}
+        size={20}
+        allowFraction
+        iconsCount={5}
+        transition
+        readonly={isSubmitting}
+      />{" "}
+      <span className="ml-2 text-sm font-medium">{localValue.toFixed(1)}</span>
+      {isSubmitting && (
+        <div className="ml-2">
+          <LoadingSpinner />
+        </div>
+      )}
+    </div>
+  );
+};
+export default RatingComponent;
+
+```
+
+# components\Reviews\ReviewFilterControls.tsx
+
+```tsx
+// components/reviews/ReviewFilterControls.tsx
+import React, { useState } from "react";
+import { ReviewFilters } from "../../types/review";
+import { useUserGroups } from "../../hooks/useUserGroups";
+
+interface ReviewFilterControlsProps {
+  onFilterChange: (filters: ReviewFilters) => void;
+}
+
+export const ReviewFilterControls: React.FC<ReviewFilterControlsProps> = ({
+  onFilterChange,
+}) => {
+  const { groups } = useUserGroups();
+  const [filters, setFilters] = useState<ReviewFilters>({});
+
+  const handleGroupChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const groupId = e.target.value ? Number(e.target.value) : undefined;
+    const newFilters = { ...filters, groupId };
+    setFilters(newFilters);
+    onFilterChange(newFilters);
+  };
+
+  const handleRatingChange = (type: "min" | "max", value: number) => {
+    const newFilters = {
+      ...filters,
+      [`${type}Rating`]: value,
+    };
+    setFilters(newFilters);
+    onFilterChange(newFilters);
+  };
+
+  const handleSortChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const sortBy = e.target.value as ReviewFilters["sortBy"];
+    const newFilters = { ...filters, sortBy };
+    setFilters(newFilters);
+    onFilterChange(newFilters);
+  };
+
+  return (
+    <div className="review-filter-controls grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+      {/* Group Filter */}
+      <div>
+        <label
+          htmlFor="group-filter"
+          className="block text-sm font-medium text-gray-700"
+        >
+          Filter by Group
+        </label>
+        <select
+          id="group-filter"
+          className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md"
+          onChange={handleGroupChange}
+          value={filters.groupId || ""}
+        >
+          <option value="">All Groups</option>
+          {groups.map((group) => (
+            <option key={group.id} value={group.id}>
+              {group.name}
+            </option>
+          ))}
+        </select>
+      </div>
+
+      {/* Rating Range */}
+      <div>
+        <label className="block text-sm font-medium text-gray-700">
+          Rating Range
+        </label>
+        <div className="flex space-x-2 mt-1">
+          <select
+            className="block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md"
+            onChange={(e) => handleRatingChange("min", Number(e.target.value))}
+            value={filters.minRating || ""}
+          >
+            <option value="">Min Rating</option>
+            {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((rating) => (
+              <option key={rating} value={rating}>
+                {rating}
+              </option>
+            ))}
+          </select>
+          <select
+            className="block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md"
+            onChange={(e) => handleRatingChange("max", Number(e.target.value))}
+            value={filters.maxRating || ""}
+          >
+            <option value="">Max Rating</option>
+            {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((rating) => (
+              <option key={rating} value={rating}>
+                {rating}
+              </option>
+            ))}
+          </select>
+        </div>
+      </div>
+
+      {/* Sort Options */}
+      <div>
+        <label
+          htmlFor="sort-filter"
+          className="block text-sm font-medium text-gray-700"
+        >
+          Sort By
+        </label>
+        <select
+          id="sort-filter"
+          className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md"
+          onChange={handleSortChange}
+          value={filters.sortBy || ""}
+        >
+          <option value="">Default</option>
+          <option value="newest">Newest First</option>
+          <option value="highest">Highest Rated</option>
+          <option value="lowest">Lowest Rated</option>
+        </select>
+      </div>
+    </div>
+  );
+};
+
+```
+
+# components\Reviews\ReviewForm.tsx
+
+```tsx
+// components/reviews/ReviewForm.tsx
+import React, { useState, useEffect } from "react";
+import { Rating } from "react-simple-star-rating";
+import { Review } from "../../types/review";
+
+interface ReviewFormProps {
+  initialReview?: Partial<Review> | null;
+  onSubmit: (reviewData: Partial<Review>) => Promise<void>;
+  onCancel?: () => void;
+}
+
+export const ReviewForm: React.FC<ReviewFormProps> = ({
+  initialReview,
+  onSubmit,
+  onCancel,
+}) => {
+  const [rating, setRating] = useState(initialReview?.rating || 0);
+  const [content, setContent] = useState(initialReview?.content || "");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Reset form when initial review changes
+  useEffect(() => {
+    setRating(initialReview?.rating || 0);
+    setContent(initialReview?.content || "");
+  }, [initialReview]);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (rating === 0) {
+      // Optionally add validation feedback
+      return;
+    }
+
+    setIsSubmitting(true);
+    try {
+      await onSubmit({
+        rating,
+        content: content.trim() || undefined,
+      });
+
+      // Reset form after successful submission
+      setRating(0);
+      setContent("");
+    } catch (error) {
+      console.error("Review submission failed", error);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  return (
+    <form
+      onSubmit={handleSubmit}
+      className="bg-white shadow-md rounded-lg p-6 mb-4"
+    >
+      <div className="mb-4">
+        <label
+          htmlFor="rating"
+          className="block text-sm font-medium text-gray-700 mb-2"
+        >
+          Your Rating
+        </label>
+        <div className="flex items-center">
+          <Rating
+            onClick={setRating}
+            initialValue={rating / 2}
+            size={30}
+            allowFraction
+            iconsCount={5}
+          />
+          <span className="ml-2 text-sm font-medium">{rating.toFixed(1)}</span>
+        </div>
+      </div>
+
+      <div className="mb-4">
+        <label
+          htmlFor="content"
+          className="block text-sm font-medium text-gray-700 mb-2"
+        >
+          Review (Optional)
+        </label>
+        <textarea
+          id="content"
+          value={content}
+          onChange={(e) => setContent(e.target.value)}
+          className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+          rows={4}
+          placeholder="Share your thoughts about this song..."
+          maxLength={500}
+        />
+        <p className="mt-1 text-xs text-gray-500 text-right">
+          {content.length}/500
+        </p>
+      </div>
+
+      <div className="flex justify-end space-x-3">
+        {onCancel && (
+          <button
+            type="button"
+            onClick={onCancel}
+            className="px-4 py-2 text-sm font-medium text-gray-700 bg-white rounded-md border border-gray-300 hover:bg-gray-50"
+          >
+            Cancel
+          </button>
+        )}
+        <button
+          type="submit"
+          disabled={isSubmitting || rating === 0}
+          className="px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50"
+        >
+          {initialReview ? "Update Review" : "Submit Review"}
+        </button>
+      </div>
+    </form>
+  );
+};
+
+```
+
+# components\Reviews\ReviewItem.tsx
+
+```tsx
+// components/reviews/ReviewItem.tsx
+import React from "react";
+import { Rating } from "react-simple-star-rating";
+import { Review } from "../../types/review";
+import { useAuth } from "../../context/AuthContext";
+import { TrashIcon, PencilIcon } from "@heroicons/react/20/solid";
+
+interface ReviewItemProps {
+  review: Review;
+  onEdit?: (review: Review) => void;
+  onDelete?: (reviewId: number) => void;
+}
+
+export const ReviewItem: React.FC<ReviewItemProps> = ({
+  review,
+  onEdit,
+  onDelete,
+}) => {
+  const { user } = useAuth();
+  const isOwnReview = user?.id === review.userId;
+
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString);
+    return new Intl.DateTimeFormat("en-US", {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+    }).format(date);
+  };
+
+  return (
+    <div className="bg-white shadow-md rounded-lg p-4 relative">
+      {/* Review Header */}
+      <div className="flex justify-between items-start mb-3">
+        <div className="flex items-center space-x-3">
+          {/* User Avatar */}
+          <img
+            src={review.author.avatar || "/default-avatar.png"}
+            alt={review.author.username}
+            className="w-10 h-10 rounded-full object-cover"
+          />
+
+          {/* User Info */}
+          <div>
+            <p className="font-semibold text-gray-800">
+              {review.author.username}
+              {isOwnReview && (
+                <span className="ml-2 text-xs text-gray-500">(You)</span>
+              )}
+            </p>
+            <p className="text-xs text-gray-500">
+              {formatDate(review.createdAt)}
+            </p>
+          </div>
+        </div>
+
+        {/* Rating */}
+        <div className="flex items-center">
+          <Rating
+            initialValue={review.rating / 2}
+            readonly
+            size={20}
+            allowFraction
+            iconsCount={5}
+          />
+          <span className="ml-2 text-sm font-medium">
+            {review.rating.toFixed(1)}
+          </span>
+        </div>
+      </div>
+
+      {/* Review Content */}
+      {review.content && <p className="text-gray-700 mb-3">{review.content}</p>}
+
+      {/* Edit/Delete Actions */}
+      {isOwnReview && (
+        <div className="absolute top-4 right-4 flex space-x-2">
+          {onEdit && (
+            <button
+              onClick={() => onEdit(review)}
+              className="text-blue-500 hover:text-blue-700"
+              title="Edit Review"
+            >
+              <PencilIcon className="h-5 w-5" />
+            </button>
+          )}
+          {onDelete && (
+            <button
+              onClick={() => onDelete(review.id)}
+              className="text-red-500 hover:text-red-700"
+              title="Delete Review"
+            >
+              <TrashIcon className="h-5 w-5" />
+            </button>
+          )}
+        </div>
+      )}
+    </div>
+  );
+};
+
+```
+
+# components\Reviews\ReviewList.tsx
+
+```tsx
+// components/reviews/ReviewList.tsx
+import React, { useState } from "react";
+import { useReviews } from "../../hooks/useReviews";
+import { Review, ReviewFilters } from "../../types/review";
+import { ChevronDownIcon } from "@heroicons/react/20/solid";
+import { ReviewItem } from "./ReviewItem";
+import { ReviewForm } from "./ReviewForm";
+import { ReviewFilterControls } from "./ReviewFilterControls";
+import LoadingSpinner from "../common/LoadingSpinner";
+import { ErrorDisplay } from "../common/ErrorDisplay";
+
+interface ReviewListProps {
+  songId: number;
+  initialFilters?: ReviewFilters;
+}
+
+export const ReviewList: React.FC<ReviewListProps> = ({
+  songId,
+  initialFilters,
+}) => {
+  const {
+    reviews,
+    loading,
+    error,
+    pagination,
+    addReview,
+    updateReview,
+    deleteReview,
+    loadMore,
+    setFilters,
+  } = useReviews({ songId, initialFilters });
+
+  const [editingReview, setEditingReview] = useState<Partial<Review> | null>(
+    null
+  );
+
+  if (loading) return <LoadingSpinner />;
+  if (error) return <ErrorDisplay error={error} />;
+
+  return (
+    <div className="review-list space-y-4">
+      <ReviewFilterControls onFilterChange={setFilters} />
+
+      <ReviewForm
+        initialReview={editingReview}
+        onSubmit={async (reviewData) => {
+          try {
+            if (editingReview && "id" in editingReview) {
+              // Updating existing review
+              await updateReview(editingReview.id!, reviewData);
+            } else {
+              // Adding new review
+              await addReview(reviewData);
+            }
+            setEditingReview(null);
+          } catch (error) {
+            console.error("Review submission failed", error);
+          }
+        }}
+        onCancel={() => setEditingReview(null)}
+      />
+
+      <div className="space-y-4">
+        {reviews.map((review) => (
+          <ReviewItem
+            key={review.id}
+            review={review}
+            onEdit={() => setEditingReview(review)}
+            onDelete={() => deleteReview(review.id)}
+          />
+        ))}
+      </div>
+
+      {pagination.page < pagination.totalPages && (
+        <div className="text-center">
+          <button
+            onClick={loadMore}
+            className="flex items-center mx-auto bg-gray-200 px-4 py-2 rounded hover:bg-gray-300"
+          >
+            Load More Reviews
+            <ChevronDownIcon className="ml-2 h-5 w-5" />
+          </button>
+        </div>
+      )}
+    </div>
+  );
+};
 
 ```
 
@@ -1194,123 +1861,6 @@ export default ChartComponent;
 
 ```
 
-# components\SongStats\CommentInput.tsx
-
-```tsx
-// // CommentInput.tsx
-// import React from "react";
-
-// interface CommentInputProps {
-//   songId: number;
-//   content: string;
-//   isEditing: boolean;
-//   handleContentChange: (songId: number, content: string) => void;
-// }
-
-// const CommentInput: React.FC<CommentInputProps> = ({
-//   songId,
-//   content,
-//   isEditing,
-//   handleContentChange,
-// }) => {
-//   return (
-//     <div className="relative">
-//       <input
-//         type="text"
-//         value={content}
-//         onChange={(e) => handleContentChange(songId, e.target.value)}
-//         placeholder="Add a comment"
-//         className="w-full border-gray-300 rounded-sm text-sm p-1 focus:border-indigo-500 focus:ring-indigo-500 placeholder:text-gray-300 placeholder:italic"
-//       />
-//       {isEditing && (
-//         <div className="absolute right-2 top-1/2 transform -translate-y-1/2">
-//           <div className="animate-pulse h-2 w-2 rounded-full bg-indigo-500"></div>
-//         </div>
-//       )}
-//     </div>
-//   );
-// };
-
-// export default React.memo(CommentInput);
-
-```
-
-# components\SongStats\ExpandedReviewSection.tsx
-
-```tsx
-// ExpandedReviewSection.tsx
-import React from "react";
-import { Rating } from "react-simple-star-rating";
-import { SongStat, UserReview } from "../../types/rhcp-types";
-import ReviewItem from "./ReviewItem";
-
-interface ExpandedReviewSectionProps {
-  song: SongStat;
-  isAuthenticated: boolean;
-  loadingReviews: { [key: number]: boolean };
-  userReviewsRef: React.MutableRefObject<{ [key: number]: UserReview[] }>;
-  user: any;
-}
-
-const ExpandedReviewSection: React.FC<ExpandedReviewSectionProps> = ({
-  song,
-  isAuthenticated,
-  loadingReviews,
-  userReviewsRef,
-  user,
-}) => {
-  const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    return new Intl.DateTimeFormat("en-US", {
-      year: "numeric",
-      month: "short",
-      day: "numeric",
-    }).format(date);
-  };
-
-  return (
-    <tr>
-      <td colSpan={isAuthenticated ? 7 : 6} className="px-4 py-4 bg-gray-50">
-        <div className="border-t border-b border-gray-200 py-4">
-          <h4 className="text-lg font-medium text-gray-900 mb-3">
-            All Reviews ({song.reviewCount})
-          </h4>
-
-          {loadingReviews[song.id] ? (
-            <div className="flex justify-center py-4">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
-            </div>
-          ) : userReviewsRef.current[song.id]?.length > 0 ? (
-            <div className="space-y-4">
-              {userReviewsRef.current[song.id].map((review) => (
-                <ReviewItem
-                  key={review.id}
-                  review={review}
-                  isCurrentUser={user && review.userId === user.id}
-                  formatDate={formatDate}
-                />
-              ))}
-            </div>
-          ) : (
-            <div className="text-center py-6 bg-gray-50 rounded border border-gray-200">
-              <p className="text-gray-500">No reviews yet for this song.</p>
-              {isAuthenticated && (
-                <p className="text-sm text-gray-500 mt-1">
-                  Be the first to leave a review!
-                </p>
-              )}
-            </div>
-          )}
-        </div>
-      </td>
-    </tr>
-  );
-};
-
-export default React.memo(ExpandedReviewSection);
-
-```
-
 # components\SongStats\Filters.tsx
 
 ```tsx
@@ -1406,707 +1956,6 @@ export default Filters;
 export { default as SongStats } from "./SongStats";
 export { default as Filters } from "./Filters";
 export { default as ChartComponent } from "./ChartComponent";
-export { default as ReviewsTable } from "./ReviewsTable";
-
-```
-
-# components\SongStats\RatingComponent.tsx
-
-```tsx
-import { Rating } from "react-simple-star-rating";
-import { LoadingSpinner } from "../common";
-import { useState, useEffect } from "react";
-
-interface RatingComponentProps {
-  value: number;
-  onSubmit: (stars: number) => void;
-  isSubmitting?: boolean;
-}
-
-const RatingComponent: React.FC<RatingComponentProps> = ({
-  value,
-  onSubmit,
-  isSubmitting,
-}) => {
-  const [localValue, setLocalValue] = useState(value);
-
-  useEffect(() => {
-    setLocalValue(value);
-  }, [value]);
-  return (
-    <div className="relative inline-flex items-center">
-      <Rating
-        onClick={onSubmit}
-        initialValue={localValue / 2}
-        size={20}
-        allowFraction
-        iconsCount={5}
-        transition
-        readonly={isSubmitting}
-      />{" "}
-      <span className="ml-2 text-sm font-medium">{localValue.toFixed(1)}</span>
-      {isSubmitting && (
-        <div className="ml-2">
-          <LoadingSpinner />
-        </div>
-      )}
-    </div>
-  );
-};
-export default RatingComponent;
-
-```
-
-# components\SongStats\ReviewItem.tsx
-
-```tsx
-// ReviewItem.tsx
-import React from "react";
-import { Rating } from "react-simple-star-rating";
-import { UserReview } from "../../types/rhcp-types";
-
-interface ReviewItemProps {
-  review: UserReview;
-  isCurrentUser: boolean;
-  formatDate: (date: string) => string;
-}
-
-const ReviewItem: React.FC<ReviewItemProps> = ({
-  review,
-  isCurrentUser,
-  formatDate,
-}) => {
-  return (
-    <div className="bg-white p-3 rounded border border-gray-200">
-      <div className="flex justify-between items-start">
-        <div className="flex items-center">
-          <div className="flex-shrink-0">
-            <img
-              className="h-8 w-8 rounded-full"
-              src={review.author?.image || "/images/default-user.png"}
-              alt={review.author?.username || "User"}
-              onError={(e) => {
-                e.currentTarget.onerror = null;
-                e.currentTarget.src = "/images/default-user.png";
-              }}
-            />
-          </div>
-          <div className="ml-3">
-            <p className="text-sm font-medium text-gray-900">
-              {review.author?.username || "Anonymous"}
-              {isCurrentUser && (
-                <span className="ml-2 text-xs font-normal text-gray-500">
-                  (You)
-                </span>
-              )}
-            </p>
-            <p className="text-xs text-gray-500">
-              {formatDate(review.createdAt)}
-            </p>
-          </div>
-        </div>
-        <div className="flex items-center">
-          <Rating
-            initialValue={review.rating / 2}
-            size={16}
-            readonly
-            allowFraction
-            iconsCount={5}
-          />
-          <span className="ml-1 text-sm font-medium">
-            {review.rating.toFixed(1)}
-          </span>
-        </div>
-      </div>
-
-      {review.content && (
-        <div className="mt-2 text-sm text-gray-700">
-          <p>{review.content}</p>
-        </div>
-      )}
-    </div>
-  );
-};
-
-export default React.memo(ReviewItem);
-
-```
-
-# components\SongStats\ReviewRow.tsx
-
-```tsx
-// ReviewRow.tsx
-import React, { useMemo } from "react";
-import { Rating } from "react-simple-star-rating";
-import { SongStat, UserReview } from "../../types/rhcp-types";
-import RatingComponent from "./RatingComponent";
-
-interface ReviewRowProps {
-  song: SongStat;
-  isGroupView: boolean;
-  groupId?: string;
-  isAuthenticated: boolean;
-  expandedSongId: number | null;
-  currentRatings: { [key: number]: number };
-  submitting: { [key: number]: boolean };
-  handleExpand: (songId: number) => void;
-  handleRatingChange: (songId: number, rating: number) => void;
-  filteredReviews: UserReview[];
-  userId?: Number;
-}
-
-const ReviewRow: React.FC<ReviewRowProps> = ({
-  song,
-  isGroupView,
-  groupId,
-  isAuthenticated,
-  expandedSongId,
-  currentRatings,
-  submitting,
-  handleExpand,
-  handleRatingChange,
-  filteredReviews,
-  userId,
-}) => {
-  const hasUserReview = useMemo(() => {
-    if (!isGroupView)
-      return filteredReviews.some((review) => review.userId === userId);
-
-    return filteredReviews.some(
-      (review) =>
-        review.userId === userId && review.groupId === parseInt(groupId || "0")
-    );
-  }, [filteredReviews, userId, groupId, isGroupView]);
-
-  const otherReviewsCount = useMemo(() => {
-    if (!isGroupView) return filteredReviews.length - (hasUserReview ? 1 : 0);
-
-    return filteredReviews.filter(
-      (review) =>
-        review.groupId === parseInt(groupId || "0") && review.userId !== userId
-    ).length;
-  }, [filteredReviews, userId, groupId, isGroupView, hasUserReview]);
-
-  return (
-    <tr
-      className={`hover:bg-gray-50 ${
-        expandedSongId === song.id ? "bg-gray-50" : ""
-      }`}
-    >
-      <td className="px-3 py-2 text-sm">{song.trackNumber}</td>
-      <td className="px-3 py-2 text-sm font-medium">{song.title}</td>
-
-      {/* Public Avg */}
-
-      <td className="px-3 py-2 text-sm text-right">
-        {song.publicAverage.toFixed(1)}
-      </td>
-
-      {/* Group Avg or empty cell */}
-      {isGroupView ? (
-        <td className="px-3 py-2 text-sm text-right">
-          {(song.groupAverage || 0).toFixed(1)}
-        </td>
-      ) : (
-        <td className="px-3 py-2 text-sm text-right"></td>
-      )}
-
-      {/* Your Rating */}
-      <td className="px-2 py-2 text-sm">
-        {isAuthenticated ? (
-          <RatingComponent
-            value={currentRatings[song.id]}
-            onSubmit={(stars: number) => handleRatingChange(song.id, stars)}
-            isSubmitting={submitting[song.id]}
-          />
-        ) : (
-          <div>{song.currentUserRating?.toFixed(1) || "-"}</div>
-        )}
-      </td>
-
-      {/* Actions */}
-      <td className="px-3 py-2 text-right">
-        <div className="flex gap-2 justify-end">
-          <button
-            className={`rounded-md px-3 py-2 text-sm ${
-              expandedSongId === song.id
-                ? "bg-indigo-100 text-indigo-700"
-                : "bg-gray-100 hover:bg-gray-200"
-            }`}
-            onClick={() => handleExpand(song.id)}
-          >
-            {hasUserReview ? "Edit Your Review" : "Add Review"}
-          </button>
-
-          {otherReviewsCount > 0 && (
-            <button
-              className="bg-gray-100 hover:bg-gray-200 rounded-md px-3 py-2 text-sm"
-              onClick={() => handleExpand(song.id)}
-            >
-              {`Read Reviews (${otherReviewsCount})`}
-            </button>
-          )}
-        </div>
-      </td>
-    </tr>
-  );
-};
-
-export default React.memo(ReviewRow);
-
-```
-
-# components\SongStats\ReviewsTable.tsx
-
-```tsx
-import React, { useState, useCallback, useRef, useMemo } from "react";
-import { Rating } from "react-simple-star-rating";
-import { SongStat, FiltersState, UserReview } from "../../types/rhcp-types";
-import { useAuth } from "../../context/AuthContext";
-import { fetchWrapper } from "../../services/api";
-import ReviewItem from "./ReviewItem";
-import ReviewRow from "./ReviewRow";
-
-interface TableProps {
-  songStats: SongStat[];
-  filters: FiltersState;
-  albumId: number;
-  onReviewSubmitted?: (updatedSong?: SongStat) => void;
-}
-
-interface ReviewState {
-  ratings: Record<number, number>;
-  contents: Record<number, string>;
-  submitting: Record<number, boolean>;
-  reviews: Record<number, UserReview[]>;
-  loading: Record<number, boolean>;
-}
-
-const ReviewsTable = ({
-  songStats,
-  filters,
-  albumId,
-  onReviewSubmitted,
-}: TableProps) => {
-  const { user } = useAuth();
-  const isAuthenticated = !!user;
-  const [expandedSongId, setExpandedSongId] = useState<number | null>(null);
-  const [reviews, setReviews] = useState<Record<number, UserReview[]>>({});
-  const [error, setError] = useState<string | null>(null);
-  const [state, setState] = useState<ReviewState>({
-    ratings: {},
-    contents: {},
-    submitting: {},
-    reviews: {},
-    loading: {},
-  });
-
-  const currentRatings = useMemo(
-    () =>
-      songStats.reduce((acc, song) => {
-        const inProgress = state.ratings[song.id];
-        return {
-          ...acc,
-          [song.id]:
-            inProgress ?? song.currentUserRating ?? song.groupAverage ?? 0,
-        };
-      }, {} as Record<number, number>),
-    [songStats, state.ratings]
-  );
-
-  const updateReviewState = (updates: Partial<ReviewState>) => {
-    setState((prev) => ({
-      ...prev,
-      ...Object.keys(updates).reduce(
-        (acc, key) => ({
-          ...acc,
-          [key]: {
-            ...prev[key as keyof ReviewState],
-            ...updates[key as keyof ReviewState],
-          },
-        }),
-        {}
-      ),
-    }));
-  };
-
-  const isCurrentUserSelected = filters.userId === String(user?.id);
-
-  const contentsRef = useRef<Record<number, string>>({});
-
-  const handleRatingChange = useCallback(
-    async (songId: number, stars: number) => {
-      const rating = stars * 2;
-      const songData = songStats.find((s) => s.id === songId);
-      // Immediate rating update
-      updateReviewState({
-        ratings: { [songId]: rating },
-        submitting: { [songId]: true },
-      });
-
-      if (!songData) return;
-
-      const isNewReview = !songData.currentUserReviewId;
-      const tempReviewCount = songData.reviewCount + (isNewReview ? 1 : 0);
-
-      // Optimistic update
-      const content = contentsRef.current[songId] || "";
-
-      setState((prev) => {
-        const existingReviews = prev.reviews[songId] || [];
-        const existingIndex = existingReviews.findIndex(
-          (r) => r.userId === user?.id
-        );
-
-        const updatedReview = {
-          ...(existingIndex >= 0 ? existingReviews[existingIndex] : {}),
-          id: songData.currentUserReviewId || Date.now(), // Use real ID if available
-          userId: user!.id,
-          songId,
-          rating: stars * 2,
-          content: content,
-          createdAt: new Date().toISOString(),
-          author: {
-            id: user!.id,
-            username: user!.username,
-            image: user!.image,
-          },
-        };
-
-        return {
-          ...prev,
-          reviews: {
-            ...prev.reviews,
-            [songId]:
-              existingIndex >= 0
-                ? [
-                    ...existingReviews.slice(0, existingIndex),
-                    updatedReview,
-                    ...existingReviews.slice(existingIndex + 1),
-                  ]
-                : [updatedReview, ...existingReviews],
-          },
-          ratings: {
-            ...prev.ratings,
-            [songId]: stars * 2, // Update rating immediately
-          },
-        };
-      });
-
-      onReviewSubmitted?.({
-        ...songData,
-        currentUserRating: rating,
-        reviewCount: tempReviewCount,
-        currentUserReviewId: songData.currentUserReviewId || Date.now(), // Temp ID
-      });
-
-      try {
-        const method = songData.currentUserReviewId ? "PUT" : "POST";
-        const payload: any = {
-          songId,
-          rating,
-          content,
-        };
-
-        const response = await fetchWrapper(
-          `/reviews/${songData?.currentUserReviewId || ""}`,
-          {
-            method,
-            headers: getAuthHeaders(),
-            body: JSON.stringify(payload),
-          }
-        );
-
-        if (response.id) {
-          setState((prev) => ({
-            ...prev,
-            reviews: {
-              ...prev.reviews,
-              [songId]: (prev.reviews[songId] || []).map((review) =>
-                review.userId === user?.id
-                  ? { ...review, id: response.id }
-                  : review
-              ),
-            },
-          }));
-        }
-        updateReviewState({
-          contents: { [songId]: response.content },
-          submitting: { [songId]: false },
-        });
-        // Final update with actual data
-        onReviewSubmitted?.({
-          ...songData,
-          currentUserRating: rating,
-          currentUserReviewId: response.id,
-          reviewCount: songData.reviewCount + (method === "POST" ? 1 : 0),
-        });
-      } catch (err) {
-        // Rollback
-        onReviewSubmitted?.(songData);
-      }
-    },
-    [songStats, onReviewSubmitted]
-  );
-
-  const handleExpand = useCallback(
-    async (songId: number) => {
-      const isExpanding = expandedSongId !== songId;
-      setExpandedSongId(isExpanding ? songId : null);
-
-      if (isExpanding) {
-        updateReviewState({ loading: { [songId]: true } });
-
-        try {
-          // Fetch public reviews
-          const params = new URLSearchParams({
-            songId: songId.toString(),
-            ...(filters.groupId !== "all" && {
-              groupId: filters.groupId,
-              includeRatings: "true",
-            }),
-          });
-
-          const response = await fetchWrapper(`/reviews/song?${params}`, {
-            headers: getAuthHeaders(),
-          });
-
-          // Filter reviews with content
-          const filteredReviews = response.reviews;
-
-          // Check if user has existing review
-          const userReview = response.reviews.find(
-            (r: UserReview) => r.userId === user?.id
-          );
-
-          updateReviewState({
-            reviews: { [songId]: filteredReviews },
-            contents: { [songId]: userReview?.content || "" },
-            loading: { [songId]: false },
-          });
-        } catch (err) {
-          updateReviewState({ loading: { [songId]: false } });
-        }
-      }
-    },
-    [expandedSongId, filters.groupId, user?.id]
-  );
-
-  const getAuthHeaders = () => {
-    const headers: { "Content-Type": string; Authorization?: string } = {
-      "Content-Type": "application/json",
-    };
-
-    if (user?.token) {
-      headers["Authorization"] = `Bearer ${user.token}`;
-    }
-
-    return headers;
-  };
-
-  const handleContentChange = useCallback((songId: number, content: string) => {
-    contentsRef.current = { ...contentsRef.current, [songId]: content };
-    updateReviewState({ contents: { [songId]: content } });
-  }, []);
-
-  const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    return new Intl.DateTimeFormat("en-US", {
-      year: "numeric",
-      month: "short",
-      day: "numeric",
-    }).format(date);
-  };
-
-  const autoExpand = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-    e.target.style.height = "inherit";
-    e.target.style.height = `${e.target.scrollHeight}px`;
-  };
-  return (
-    <div className="overflow-x-auto rounded-lg border border-gray-200 shadow-sm select-none">
-      {error && (
-        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded mb-4">
-          {error}
-          <button
-            className="float-right text-red-700"
-            onClick={() => setError(null)}
-          >
-            &times;
-          </button>
-        </div>
-      )}
-
-      <table className="min-w-full divide-y divide-gray-200">
-        <thead className="bg-gray-50">
-          <tr>
-            <th className="px-4 py-3.5 text-left text-sm font-semibold text-gray-900">
-              #
-            </th>
-            <th className="px-4 py-3.5 text-left text-sm font-semibold text-gray-900">
-              Song
-            </th>
-
-            {/* Public Avg */}
-
-            <th className="px-4 py-3.5 text-right text-sm font-semibold text-gray-900">
-              Public Avg
-            </th>
-
-            {/* Group Avg */}
-            {filters.groupId !== "all" ? (
-              <th className="px-4 py-3.5 text-right text-sm font-semibold text-gray-900">
-                Group Avg
-              </th>
-            ) : (
-              <th className="px-4 py-3.5 text-right text-sm" />
-            )}
-
-            <th className="px-4 py-3.5 text-right text-sm font-semibold text-gray-900">
-              Your Rating
-            </th>
-            <th className="px-4 py-3.5 text-right text-sm font-semibold text-gray-900">
-              Actions
-            </th>
-          </tr>
-        </thead>
-        <tbody className="divide-y divide-gray-200 bg-white">
-          {songStats.map((song) => (
-            <React.Fragment key={song.id}>
-              <ReviewRow
-                song={song}
-                isGroupView={filters.groupId !== "all"}
-                groupId={filters.groupId}
-                isAuthenticated={isAuthenticated}
-                expandedSongId={expandedSongId}
-                currentRatings={currentRatings}
-                submitting={state.submitting}
-                handleExpand={handleExpand}
-                handleRatingChange={handleRatingChange}
-                filteredReviews={state.reviews[song.id] || []}
-                userId={user?.id}
-              />
-              {expandedSongId === song.id && (
-                <tr>
-                  <td colSpan={6} className="px-4 py-4 bg-gray-50">
-                    <div className="border-t border-gray-200 py-4">
-                      {isAuthenticated && (
-                        <div className="bg-white p-4 rounded-lg shadow-sm mb-4">
-                          <h4 className="text-lg font-medium text-gray-900 mb-3">
-                            Your Review
-                          </h4>
-                          <div className="mb-3">
-                            <label className="block text-sm font-medium text-gray-700 mb-1">
-                              Rating
-                            </label>
-                            <div className="flex items-center">
-                              <Rating
-                                onClick={(rate) =>
-                                  handleRatingChange(song.id, rate)
-                                }
-                                initialValue={
-                                  (currentRatings[song.id] || 0) / 2
-                                }
-                                size={24}
-                                allowFraction
-                                iconsCount={5}
-                              />
-                              <span className="ml-2 text-gray-700">
-                                {currentRatings[song.id]?.toFixed(1) || "0.0"}
-                                /10
-                              </span>
-                            </div>
-                          </div>
-                          <div className="mb-3">
-                            <label className="block text-sm font-medium text-gray-700 mb-1">
-                              Comments
-                            </label>
-                            <textarea
-                              className="shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 rounded-md"
-                              rows={3}
-                              maxLength={500}
-                              value={state.contents[song.id] || ""}
-                              onChange={(e) => {
-                                handleContentChange(song.id, e.target.value);
-                                autoExpand(e);
-                              }}
-                              placeholder="Share your thoughts..."
-                            />{" "}
-                            <div className="text-right text-xs text-gray-500 mt-1">
-                              {state.contents[song.id]?.length || 0}/500
-                            </div>
-                          </div>
-                          <div className="flex justify-end">
-                            <form onSubmit={(e) => e.preventDefault()}>
-                              <button
-                                type="button"
-                                className={`bg-indigo-600 text-white px-4 py-2 rounded-md ${
-                                  state.submitting[song.id]
-                                    ? "opacity-50 cursor-not-allowed"
-                                    : ""
-                                }`}
-                                onClick={() =>
-                                  handleRatingChange(
-                                    song.id,
-                                    (currentRatings[song.id] || 0) / 2
-                                  )
-                                }
-                                disabled={state.submitting[song.id]}
-                              >
-                                {state.submitting[song.id]
-                                  ? "Saving..."
-                                  : "Save Review"}
-                              </button>
-                            </form>
-                          </div>
-                        </div>
-                      )}
-
-                      <h4 className="text-lg font-medium text-gray-900 mb-3">
-                        All Reviews ({song.reviewCount})
-                      </h4>
-
-                      {state.reviews[song.id]?.length > 0 ? (
-                        <div className="space-y-4">
-                          {state.reviews[song.id]
-                            .sort(
-                              (a, b) =>
-                                new Date(b.createdAt).getTime() -
-                                new Date(a.createdAt).getTime()
-                            )
-                            .map((review) => (
-                              <ReviewItem
-                                key={review.id}
-                                review={review}
-                                isCurrentUser={user?.id === review.userId}
-                                formatDate={formatDate}
-                              />
-                            ))}
-                        </div>
-                      ) : (
-                        <div className="text-center py-6 bg-gray-50 rounded border border-gray-200">
-                          <p className="text-gray-500">
-                            No reviews yet for this song.
-                          </p>
-                          {isAuthenticated && (
-                            <p className="text-sm text-gray-500 mt-1">
-                              Be the first to leave a review!
-                            </p>
-                          )}
-                        </div>
-                      )}
-                    </div>
-                  </td>
-                </tr>
-              )}
-            </React.Fragment>
-          ))}
-        </tbody>
-      </table>
-    </div>
-  );
-};
-
-export default ReviewsTable;
 
 ```
 
@@ -2123,13 +1972,13 @@ import {
 } from "../../types/rhcp-types";
 import ErrorMessage from "../common/ErrorMessage";
 import LoadingSpinner from "../common/LoadingSpinner";
-import ReviewsTable from "./ReviewsTable";
 import Filters from "./Filters";
 import ChartComponent from "./ChartComponent";
 import AlbumCarousel from "../AlbumCarousel/AlbumCarousel";
 import { useAlbumStats } from "../../hooks/useAlbumStats";
 import { useGroupMembers } from "../../hooks/useGroupMembers";
 import { useAuth } from "../../context/AuthContext";
+import { ReviewList } from "../Reviews/ReviewList";
 
 const SongStats = ({
   albumId,
@@ -2287,12 +2136,15 @@ const SongStats = ({
       )}
 
       <div className="w-full p-4">
-        <ReviewsTable
-          songStats={localStats}
-          filters={filters}
-          albumId={effectiveAlbumId}
-          onReviewSubmitted={handleReviewSubmitted}
-        />
+        {localStats.length > 0 && (
+          <ReviewList
+            songId={localStats[0].id}
+            initialFilters={{
+              groupId:
+                filters.groupId !== "all" ? Number(filters.groupId) : undefined,
+            }}
+          />
+        )}
       </div>
     </div>
   );
@@ -2981,404 +2833,157 @@ export const useGroupMembers = (groupId: string) => {
 
 ```
 
-# hooks\useReviewsManager.ts
+# hooks\useReviews.ts
 
 ```ts
-import { useState, useEffect, useRef, useCallback } from "react";
-import { SongStat, FiltersState, UserReview } from "../types/rhcp-types";
-import { fetchWrapper } from "../services/api";
+import { useState, useCallback, useEffect, useRef } from "react";
+import { Review, ReviewFilters } from "../types/review";
+import { reviewService } from "../services/reviewService";
+import { useAuth } from "../context/AuthContext";
 
-interface User {
-  id: number;
-  token?: string;
-  username?: string;
-  email?: string;
+interface UseReviewsOptions {
+  songId: number;
+  initialFilters?: ReviewFilters;
+  pageSize?: number;
 }
 
-export const useReviewsManager = (
-  songStats: SongStat[],
-  filters: FiltersState,
-  user: User | null | undefined,
-  onReviewSubmitted?: () => void
-) => {
-  const isAuthenticated = !!user;
-
-  // State management
-  const expandedSongIdRef = useRef<number | null>(null);
-  const [expandedSongId, setExpandedSongId] = useState<number | null>(null);
-
-  const userReviewsRef = useRef<{ [key: number]: UserReview[] }>({});
-  const [loadingReviews, setLoadingReviews] = useState<{
-    [key: number]: boolean;
-  }>({});
-
-  const [currentRatings, setCurrentRatings] = useState<{
-    [key: number]: number;
-  }>({});
-  const [reviewContents, setReviewContents] = useState<{
-    [key: number]: string;
-  }>({});
-  const [submitting, setSubmitting] = useState<{ [key: number]: boolean }>({});
-  const [successMessages, setSuccessMessages] = useState<{
-    [key: number]: string;
-  }>({});
-  const [editingComments, setEditingComments] = useState<{
-    [key: number]: boolean;
-  }>({});
+export function useReviews({
+  songId,
+  initialFilters = {},
+  pageSize = 10,
+}: UseReviewsOptions) {
+  const [reviews, setReviews] = useState<Review[]>([]);
+  const [filters, setFilters] = useState<ReviewFilters>(initialFilters);
+  const [pagination, setPagination] = useState({
+    page: 1,
+    total: 0,
+    totalPages: 0,
+  });
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const commentTimeouts = useRef<{ [key: number]: NodeJS.Timeout }>({});
+  const { user } = useAuth();
+  const isAuthenticated = !!user;
 
-  // Initialize ratings from songStats
-  useEffect(() => {
-    const ratings: { [key: number]: number } = {};
+  // Track local optimistic updates
+  const prevReviewsRef = useRef<Review[]>([]);
 
-    songStats.forEach((song: SongStat) => {
-      if (
-        song.currentUserRating !== undefined &&
-        song.currentUserRating !== null
-      ) {
-        ratings[song.id] = song.currentUserRating;
-      }
+  // Merge new reviews with optimistic updates
+  const mergeWithPrevReviews = useCallback((newReviews: Review[]) => {
+    if (!prevReviewsRef.current.length) return newReviews;
+
+    const prevById = new Map(prevReviewsRef.current.map((r) => [r.id, r]));
+    return newReviews.map((r) => {
+      const prev = prevById.get(r.id);
+      return prev ? { ...r, ...prev } : r;
     });
+  }, []);
 
-    if (Object.keys(ratings).length > 0) {
-      setCurrentRatings(ratings);
-    }
-  }, [songStats]);
-
-  // Load user reviews for all songs on component mount
-  useEffect(() => {
-    const loadUserReviews = async () => {
-      if (!isAuthenticated || !user || !songStats.length) return;
-
-      try {
-        const songIds = songStats.map((song: SongStat) => song.id).join(",");
-        const queryParams = new URLSearchParams({
-          userId: user.id.toString(),
-          songIds: songIds,
-        });
-
-        const response = await fetchWrapper(
-          `/reviews/user/songs?${queryParams.toString()}`,
-          getAuthHeader()
-        );
-
-        if (response && response.reviews && Array.isArray(response.reviews)) {
-          const newRatings = { ...currentRatings };
-          const newContents = { ...reviewContents };
-
-          response.reviews.forEach((review: UserReview) => {
-            newRatings[review.songId] = review.rating;
-            newContents[review.songId] = review.content || "";
-          });
-
-          setCurrentRatings(newRatings);
-          setReviewContents(newContents);
-        }
-      } catch (err) {
-        console.error("Error fetching user reviews:", err);
-      }
-    };
-
-    loadUserReviews();
-  }, [songStats, user, isAuthenticated]);
-
-  // Auth headers helper
-  const getAuthHeader = useCallback(() => {
-    const headers: Record<string, string> = {
-      "Content-Type": "application/json",
-    };
-
-    if (user?.token) {
-      headers["Authorization"] = `Bearer ${user.token}`;
-    }
-
-    return { headers };
-  }, [user]);
-
-  // Handlers
-  const handleExpand = useCallback(
-    async (songId: number) => {
-      if (expandedSongIdRef.current === songId) {
-        expandedSongIdRef.current = null;
-        setExpandedSongId(null);
-        return;
-      }
-
-      expandedSongIdRef.current = songId;
-      setExpandedSongId(songId);
-
-      if (!userReviewsRef.current[songId]) {
-        setLoadingReviews((prev) => ({ ...prev, [songId]: true }));
-
-        try {
-          const queryParams = new URLSearchParams({
-            songId: songId.toString(),
-          });
-
-          if (filters.groupId !== "all") {
-            queryParams.append("groupId", filters.groupId);
-          }
-
-          const response = await fetchWrapper(
-            `/reviews/song?${queryParams.toString()}`,
-            getAuthHeader()
-          );
-
-          userReviewsRef.current[songId] = response.reviews || [];
-
-          // Force update so the component rerenders with reviews
-          setLoadingReviews((prev) => ({ ...prev, [songId]: false }));
-
-          // Find user's review if it exists
-          if (isAuthenticated && user) {
-            const userReview = response.reviews?.find(
-              (review: UserReview) => review.userId === user.id
-            );
-
-            if (userReview) {
-              setCurrentRatings((prev) => ({
-                ...prev,
-                [songId]: userReview.rating,
-              }));
-              setReviewContents((prev) => ({
-                ...prev,
-                [songId]: userReview.content || "",
-              }));
-            }
-          }
-        } catch (err) {
-          console.error("Error fetching reviews:", err);
-          setError("Failed to load reviews");
-          setLoadingReviews((prev) => ({ ...prev, [songId]: false }));
-        }
-      }
-    },
-    [filters, isAuthenticated, user, getAuthHeader]
-  );
-
-  const handleRatingChange = useCallback(
-    (songId: number, rating: number) => {
-      const newRating = rating * 2; // Convert 5-star scale to 10-point scale
-
-      // Update state without causing a complete re-render
-      setCurrentRatings((prev) => {
-        const updatedRatings = { ...prev };
-        updatedRatings[songId] = newRating;
-        return updatedRatings;
-      });
-
-      // Submit the review in the background
-      submitReview(songId, newRating, reviewContents[songId] || "");
-    },
-    [reviewContents]
-  );
-
-  const handleContentChange = useCallback(
-    (songId: number, content: string) => {
-      setReviewContents((prev) => ({ ...prev, [songId]: content }));
-      setEditingComments((prev) => ({ ...prev, [songId]: true }));
-
-      // Clear any existing timeout
-      if (commentTimeouts.current[songId]) {
-        clearTimeout(commentTimeouts.current[songId]);
-      }
-
-      // Set a new timeout to submit after 1.5 seconds of inactivity
-      commentTimeouts.current[songId] = setTimeout(() => {
-        const rating = currentRatings[songId];
-        if (rating) {
-          submitReview(songId, rating, content);
-          setEditingComments((prev) => ({ ...prev, [songId]: false }));
-        }
-      }, 1500);
-    },
-    [currentRatings]
-  );
-
-  const submitReview = async (
-    songId: number,
-    rating: number,
-    content: string
-  ) => {
-    if (!isAuthenticated || !user) {
-      setError("You must be logged in to submit a review");
-      return;
-    }
-
-    setSubmitting((prev) => ({ ...prev, [songId]: true }));
+  const fetchReviews = useCallback(async () => {
+    if (!songId) return;
+    setLoading(true);
 
     try {
-      // Find if user already has a review
-      const songData = songStats.find((s: SongStat) => s.id === songId);
-      const hasExistingReview =
-        songData?.currentUserRating !== undefined &&
-        songData.currentUserRating !== null;
-
-      if (rating === 0) {
-        throw new Error("Please provide a rating");
-      }
-
-      const reviewData = {
+      const result = await reviewService.getReviews(
         songId,
-        rating,
-        content: content || "",
-        groupId: filters.groupId !== "all" ? parseInt(filters.groupId) : null,
-      };
+        filters,
+        pagination.page,
+        pageSize
+      );
 
-      // Find review ID if updating
-      let reviewId = null;
-
-      // If we have an existing review based on currentUserRating
-      if (hasExistingReview) {
-        // First check our cached reviews
-        if (userReviewsRef.current[songId]) {
-          const cachedReview = userReviewsRef.current[songId].find(
-            (review) => review.userId === user.id
-          );
-          if (cachedReview) {
-            reviewId = cachedReview.id;
-          }
-        }
-
-        // If not found in cache, fetch it directly
-        if (!reviewId) {
-          try {
-            console.log("Fetching review ID for:", songId);
-
-            const response = await fetchWrapper(
-              `/reviews/user/${user.id}/song/${songId}`,
-              getAuthHeader()
-            );
-
-            if (response && response.review) {
-              reviewId = response.review.id;
-              console.log("Found review ID:", reviewId);
-
-              // Update our cache with this review
-              if (!userReviewsRef.current[songId]) {
-                userReviewsRef.current[songId] = [];
-              }
-
-              // Only add if not already in the cache
-              const exists = userReviewsRef.current[songId].some(
-                (r) => r.id === response.review.id
-              );
-              if (!exists) {
-                userReviewsRef.current[songId].push(response.review);
-              }
-            }
-          } catch (err) {
-            console.error("Error fetching review ID:", err);
-            // Continue without the review ID - we'll create a new one
-          }
-        }
-      }
-
-      // Determine endpoint and method
-      const method = reviewId ? "PUT" : "POST";
-      const endpoint = reviewId ? `/reviews/${reviewId}` : "/reviews";
-
-      console.log(`Submitting review: ${method} ${endpoint}`, {
-        songId,
-        reviewId,
-        hasExistingReview,
+      const mergedReviews = mergeWithPrevReviews(result.reviews);
+      prevReviewsRef.current = mergedReviews;
+      setReviews(mergedReviews);
+      setPagination({
+        page: result.page,
+        total: result.total,
+        totalPages: result.totalPages,
       });
-
-      const options = {
-        ...getAuthHeader(),
-        method,
-        body: JSON.stringify(reviewData),
-      };
-
-      // Make the API request
-      const response = await fetchWrapper(endpoint, options);
-
-      // Show success message
-      setSuccessMessages((prev) => ({
-        ...prev,
-        [songId]: hasExistingReview ? "Review updated!" : "Review submitted!",
-      }));
-
-      // Clear success message after 2 seconds
-      setTimeout(() => {
-        setSuccessMessages((prev) => {
-          const newMessages = { ...prev };
-          delete newMessages[songId];
-          return newMessages;
-        });
-      }, 2000);
-
-      // Maybe refresh stats or reviews if expanded
-      if (response && response.id) {
-        // Update our cache with this new/updated review
-        if (response.id && !reviewId) {
-          // This was a new review - store it
-          if (!userReviewsRef.current[songId]) {
-            userReviewsRef.current[songId] = [];
-          }
-
-          // Add or update the review in our cache
-          const reviewIndex = userReviewsRef.current[songId].findIndex(
-            (r) => r.id === response.id
-          );
-          if (reviewIndex >= 0) {
-            userReviewsRef.current[songId][reviewIndex] = response;
-          } else {
-            userReviewsRef.current[songId].push(response);
-          }
-        }
-
-        // Call the callback to refresh stats
-        if (onReviewSubmitted) {
-          onReviewSubmitted();
-        }
-
-        // Only refresh expanded reviews
-        if (expandedSongIdRef.current === songId) {
-          const queryParams = new URLSearchParams({
-            songId: songId.toString(),
-          });
-
-          if (filters.groupId !== "all") {
-            queryParams.append("groupId", filters.groupId);
-          }
-
-          const reviewsResponse = await fetchWrapper(
-            `/reviews/song?${queryParams.toString()}`,
-            getAuthHeader()
-          );
-
-          userReviewsRef.current[songId] = reviewsResponse.reviews || [];
-          // Force re-render for the reviews list
-          setSubmitting((prev) => ({ ...prev }));
-        }
-      }
+      setError(null);
     } catch (err) {
-      console.error("Error submitting review:", err);
-      setError(err instanceof Error ? err.message : "An error occurred");
+      console.error("Error fetching reviews:", err);
+      setError(err instanceof Error ? err.message : "Failed to load reviews");
     } finally {
-      setSubmitting((prev) => ({ ...prev, [songId]: false }));
+      setLoading(false);
     }
-  };
+  }, [songId, filters, pagination.page, pageSize, mergeWithPrevReviews]);
+
+  const loadMore = useCallback(() => {
+    if (pagination.page < pagination.totalPages) {
+      setPagination((prev) => ({ ...prev, page: prev.page + 1 }));
+    }
+  }, [pagination]);
+
+  const addReview = useCallback(
+    async (reviewData: Partial<Review>) => {
+      try {
+        const newReview = await reviewService.createReview({
+          ...reviewData,
+          songId,
+          userId: user?.id,
+        });
+        setReviews((prev) => [newReview, ...prev]);
+        prevReviewsRef.current = [newReview, ...prevReviewsRef.current];
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "Failed to add review");
+      }
+    },
+    [songId, user?.id]
+  );
+
+  const updateReview = useCallback(
+    async (reviewId: number, reviewData: Partial<Review>) => {
+      try {
+        const updated = await reviewService.updateReview(reviewId, reviewData);
+        setReviews((prev) =>
+          prev.map((r) => (r.id === reviewId ? { ...r, ...updated } : r))
+        );
+        prevReviewsRef.current = prevReviewsRef.current.map((r) =>
+          r.id === reviewId ? { ...r, ...updated } : r
+        );
+        return updated;
+      } catch (err) {
+        setError(
+          err instanceof Error ? err.message : "Failed to update review"
+        );
+        throw err;
+      }
+    },
+    []
+  );
+
+  const deleteReview = useCallback(async (reviewId: number) => {
+    try {
+      await reviewService.deleteReview(reviewId);
+      setReviews((prev) => prev.filter((r) => r.id !== reviewId));
+      prevReviewsRef.current = prevReviewsRef.current.filter(
+        (r) => r.id !== reviewId
+      );
+      setPagination((prev) => ({ ...prev, total: prev.total - 1 }));
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to delete review");
+      throw err;
+    }
+  }, []);
+
+  // Re-fetch when filters or page changes
+  useEffect(() => {
+    fetchReviews();
+  }, [fetchReviews]);
 
   return {
-    expandedSongId,
-    userReviewsRef,
-    loadingReviews,
-    currentRatings,
-    reviewContents,
-    submitting,
-    successMessages,
-    editingComments,
+    reviews,
+    loading,
     error,
-    setError,
-    handleExpand,
-    handleRatingChange,
-    handleContentChange,
+    pagination,
+    addReview,
+    updateReview,
+    deleteReview,
+    loadMore,
+    setFilters,
+    refreshReviews: fetchReviews,
   };
-};
+}
 
 ```
 
@@ -5452,6 +5057,61 @@ export const deleteGroup = async (groupId: string) => {
 
 ```
 
+# services\reviewService.ts
+
+```ts
+import axios from "axios";
+import { Review, ReviewFilters, PaginatedReviews } from "../types/review";
+
+class ReviewService {
+  private baseUrl = "/api/reviews";
+
+  async getReviews(
+    songId: number,
+    filters: ReviewFilters = {},
+    page = 1,
+    limit = 10
+  ): Promise<PaginatedReviews> {
+    try {
+      const response = await axios.get<PaginatedReviews>(`${this.baseUrl}`, {
+        params: {
+          ...filters,
+          page,
+          limit,
+        },
+      });
+      return response.data;
+    } catch (error) {
+      console.error("Failed to fetch reviews", error);
+      throw error;
+    }
+  }
+
+  async createReview(reviewData: Partial<Review>): Promise<Review> {
+    const response = await axios.post<Review>(this.baseUrl, reviewData);
+    return response.data;
+  }
+
+  async updateReview(
+    reviewId: number,
+    reviewData: Partial<Review>
+  ): Promise<Review> {
+    const response = await axios.patch<Review>(
+      `${this.baseUrl}/${reviewId}`,
+      reviewData
+    );
+    return response.data;
+  }
+
+  async deleteReview(reviewId: number): Promise<void> {
+    await axios.delete(`${this.baseUrl}/${reviewId}`);
+  }
+}
+
+export const reviewService = new ReviewService();
+
+```
+
 # styling\Styles.css
 
 ```css
@@ -7391,6 +7051,40 @@ export interface AuthFormProps {
   onSubmit: (formData: AuthFormData) => Promise<void>;
   isLogin?: boolean;
   errors?: RegistrationError;
+}
+
+```
+
+# types\review.ts
+
+```ts
+export interface Review {
+  id: number;
+  songId: number;
+  userId: number;
+  groupId?: number;
+  rating: number;
+  content?: string;
+  createdAt: string;
+  author: {
+    id: number;
+    username: string;
+    avatar?: string;
+  };
+}
+
+export interface ReviewFilters {
+  groupId?: number;
+  minRating?: number;
+  maxRating?: number;
+  sortBy?: "newest" | "highest" | "lowest";
+}
+
+export interface PaginatedReviews {
+  reviews: Review[];
+  total: number;
+  page: number;
+  totalPages: number;
 }
 
 ```

@@ -8,13 +8,14 @@ import {
 } from "../../types/rhcp-types";
 import ErrorMessage from "../common/ErrorMessage";
 import LoadingSpinner from "../common/LoadingSpinner";
-import ReviewsTable from "./ReviewsTable";
 import Filters from "./Filters";
 import ChartComponent from "./ChartComponent";
 import AlbumCarousel from "../AlbumCarousel/AlbumCarousel";
 import { useAlbumStats } from "../../hooks/useAlbumStats";
 import { useGroupMembers } from "../../hooks/useGroupMembers";
 import { useAuth } from "../../context/AuthContext";
+import { ReviewList } from "../Reviews/ReviewList";
+import { useAlbumReviewSummary } from "../../hooks/useAlbumReviewSummary";
 
 const SongStats = ({
   albumId,
@@ -47,6 +48,17 @@ const SongStats = ({
   const effectiveAlbumId = selectedAlbum?.id || albumId;
   const { stats, loading, error } = useAlbumStats(effectiveAlbumId, filters);
   const { members, loading: membersLoading } = useGroupMembers(filters.groupId);
+
+  const {
+    songs: reviewSummaries,
+    loading: reviewSummaryLoading,
+    setFilters: setReviewFilters,
+  } = useAlbumReviewSummary({
+    albumId: effectiveAlbumId,
+    initialFilters: {
+      groupId: filters.groupId !== "all" ? Number(filters.groupId) : undefined,
+    },
+  });
 
   // Sync local stats with API data
   useEffect(() => {
@@ -172,12 +184,15 @@ const SongStats = ({
       )}
 
       <div className="w-full p-4">
-        <ReviewsTable
-          songStats={localStats}
-          filters={filters}
-          albumId={effectiveAlbumId}
-          onReviewSubmitted={handleReviewSubmitted}
-        />
+        {localStats.length > 0 && (
+          <ReviewList
+            albumId={effectiveAlbumId}
+            initialFilters={{
+              groupId:
+                filters.groupId !== "all" ? Number(filters.groupId) : undefined,
+            }}
+          />
+        )}
       </div>
     </div>
   );

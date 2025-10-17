@@ -61,10 +61,30 @@ export const createReviewService = async (data: {
   });
 };
 
-export const getReviewsService = async (filters: ReviewFilters) => {
+export const getReviewsService = async (
+  filters: ReviewFilters & {
+    songId?: number;
+    albumId?: number;
+    userId?: number;
+  }
+) => {
+  console.log("Review service filters:", filters); // Debugging log
+
   const parsed = await parseFilters(filters);
 
-  const where: Prisma.ReviewWhereInput = buildWhereClause(parsed);
+  const where: Prisma.ReviewWhereInput = {
+    ...(filters.songId ? { songId: filters.songId } : {}),
+    ...(filters.albumId
+      ? {
+          song: {
+            albumId: filters.albumId,
+          },
+        }
+      : {}),
+    ...(filters.userId ? { userId: filters.userId } : {}),
+    ...buildWhereClause(parsed),
+  };
+  console.log("Prisma where clause:", where); // Debugging log
 
   const [reviews, total] = await prisma.$transaction([
     prisma.review.findMany({
@@ -81,12 +101,10 @@ export const getReviewsService = async (filters: ReviewFilters) => {
   ]);
 
   return {
-    data: reviews,
-    meta: {
-      total,
-      page: parsed.page,
-      totalPages: Math.ceil(total / parsed.limit),
-    },
+    reviews,
+    total,
+    page: parsed.page,
+    totalPages: Math.ceil(total / parsed.limit),
   };
 };
 
@@ -295,5 +313,68 @@ export const getUserReviewForSongService = async (
 
   return {
     review,
+  };
+};
+
+export const getAlbumReviewSummaryService = async (
+  albumId: number,
+  filters: ReviewFilters & {
+    groupId?: number;
+  } = {}
+) => {
+  // Get all songs in the album
+  const songs = await prisma.song.findMany({
+    where: { albumId },
+    select: {
+      id: true,
+      title: true,
+      trackNumber: true,
+    },
+    orderBy: { trackNumber: "asc" },
+  });
+
+  // Prepare aggregation for each song
+  const songStats = await Promise.all(
+    songs.map(async (song) => {
+      // Build where clause for reviews
+      const where: Prisma.ReviewWhereInput = {
+        songId: song.id,
+        ...(filters.groupId
+          ? {
+              // If groupId provided, filter by group
+              groupId: filters.groupId,
+            }
+          : {}),
+        ...(filters.minRating
+          ? { rating: { gte: Number(filters.minRating) } }
+          : {}),
+        ...(filters.maxRating
+          ? { rating: { lte: Number(filters.maxRating) } }
+          : {}),
+      };
+
+      // Aggregate reviews for the song
+      const reviewStats = await prisma.review.aggregate({
+        where,
+        _count: { id: true },
+        _avg: { rating: true },
+      });
+
+      return {
+        songId: song.id,
+        songTitle: song.title,
+        trackNumber: song.trackNumber,
+        totalReviews: reviewStats._count.id,
+        averageRating: reviewStats._avg.rating || 0,
+      };
+    })
+  );
+
+  // Sort by track number
+  const sortedStats = songStats.sort((a, b) => a.trackNumber - b.trackNumber);
+
+  return {
+    songs: sortedStats,
+    total: sortedStats.length,
   };
 };

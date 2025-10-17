@@ -2,7 +2,8 @@ import axios from "axios";
 import { getCurrentUser } from "./authService";
 import { SongStat } from "../types/rhcp-types";
 
-const API_BASE = process.env.REACT_APP_API_BASE || "http://localhost:5000/api";
+export const API_BASE =
+  process.env.REACT_APP_API_BASE || "http://localhost:5000/api";
 
 /**
  * Get statistics for songs in an album
@@ -37,19 +38,12 @@ export const getAlbumStats = async (
       queryParams.append("userId", params.userId.toString());
     }
 
-    // Build URL - Make sure this matches your backend route definition exactly
-    // Check if it should be '/albums/:albumId/songs/stats' or '/:albumId/songs/stats'
     let url = `${API_BASE}/albums/${albumId}/songs/stats`;
     if (queryParams.toString()) {
       url += `?${queryParams.toString()}`;
     }
 
     console.log(`Requesting album stats from: ${url}`);
-
-    // For debugging: log the exact route your backend expects
-    console.log(
-      "Your backend should have a route like: router.get('/:albumId/songs/stats', ...)"
-    );
 
     const response = await axios.get<SongStat[]>(url, { headers });
     return response.data;
