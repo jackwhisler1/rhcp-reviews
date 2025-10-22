@@ -160,7 +160,7 @@ const ReviewsTable = ({
         (review) => review.userId === user?.id
       );
 
-      // Update state with current user's review details
+      // Update state with current user's review
       updateReviewState({
         ratings: {
           [songId]: song?.currentUserRating ?? 0,
