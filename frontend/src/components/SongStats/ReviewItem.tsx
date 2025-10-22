@@ -1,4 +1,3 @@
-// ReviewItem.tsx
 import React from "react";
 import { Rating } from "react-simple-star-rating";
 import { UserReview } from "../../types/rhcp-types";

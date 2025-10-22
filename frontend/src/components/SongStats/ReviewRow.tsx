@@ -1,14 +1,18 @@
-// ReviewRow.tsx
-import React, { useMemo } from "react";
-import { Rating } from "react-simple-star-rating";
+import React, { useMemo, useState } from "react";
 import { SongStat, UserReview } from "../../types/rhcp-types";
 import RatingComponent from "./RatingComponent";
+import {
+  ChevronDownIcon,
+  ChevronUpIcon,
+  PencilIcon,
+} from "@heroicons/react/24/outline";
 
 interface ReviewRowProps {
   song: SongStat;
   isGroupView: boolean;
   groupId?: string;
   isAuthenticated: boolean;
+  isEditMode: boolean;
   expandedSongId: number | null;
   currentRatings: { [key: number]: number };
   submitting: { [key: number]: boolean };
@@ -16,6 +20,8 @@ interface ReviewRowProps {
   handleRatingChange: (songId: number, rating: number) => void;
   filteredReviews: UserReview[];
   userId?: Number;
+  handleEditReview: (songId: number) => void;
+  handleViewReviews: (songId: number) => void;
 }
 
 const ReviewRow: React.FC<ReviewRowProps> = ({
@@ -23,13 +29,15 @@ const ReviewRow: React.FC<ReviewRowProps> = ({
   isGroupView,
   groupId,
   isAuthenticated,
+  isEditMode,
   expandedSongId,
   currentRatings,
   submitting,
-  handleExpand,
   handleRatingChange,
   filteredReviews,
   userId,
+  handleEditReview,
+  handleViewReviews,
 }) => {
   const hasUserReview = useMemo(() => {
     if (!isGroupView)
@@ -60,22 +68,25 @@ const ReviewRow: React.FC<ReviewRowProps> = ({
       <td className="px-3 py-2 text-sm font-medium">{song.title}</td>
 
       {/* Public Avg */}
-
       <td className="px-3 py-2 text-sm text-right">
-        {song.publicAverage.toFixed(1)}
+        <RatingComponent
+          value={song.publicAverage}
+          onSubmit={(stars: number) => handleRatingChange(song.id, stars)}
+          isSubmitting={true}
+        />
       </td>
 
       {/* Group Avg or empty cell */}
-      {isGroupView ? (
-        <td className="px-3 py-2 text-sm text-right">
-          {(song.groupAverage || 0).toFixed(1)}
-        </td>
-      ) : (
-        <td className="px-3 py-2 text-sm text-right"></td>
+      {isGroupView && (
+        <RatingComponent
+          value={song.groupAverage}
+          onSubmit={(stars: number) => handleRatingChange(song.id, stars)}
+          isSubmitting={true}
+        />
       )}
 
       {/* Your Rating */}
-      <td className="px-2 py-2 text-sm">
+      <td className="px-2 py-2 text-sm text-right">
         {isAuthenticated ? (
           <RatingComponent
             value={currentRatings[song.id]}
@@ -88,25 +99,31 @@ const ReviewRow: React.FC<ReviewRowProps> = ({
       </td>
 
       {/* Actions */}
-      <td className="px-3 py-2 text-right">
-        <div className="flex gap-2 justify-end">
-          <button
-            className={`rounded-md px-3 py-2 text-sm ${
-              expandedSongId === song.id
-                ? "bg-indigo-100 text-indigo-700"
-                : "bg-gray-100 hover:bg-gray-200"
-            }`}
-            onClick={() => handleExpand(song.id)}
-          >
-            {hasUserReview ? "Edit Your Review" : "Add Review"}
-          </button>
+      <td className="px-3 py-2 text-right relative">
+        <div className="flex gap-2 justify-end items-center">
+          {/* Edit Review Button (always visible when not in edit mode) */}
+          {isAuthenticated && !isEditMode && (
+            <button
+              className="text-gray-600 hover:text-gray-900"
+              onClick={() => handleEditReview(song.id)}
+              title="Edit Review"
+            >
+              <PencilIcon className="h-5 w-5" />
+            </button>
+          )}
 
+          {/* Reviews Button (always visible if there are other reviews) */}
           {otherReviewsCount > 0 && (
             <button
-              className="bg-gray-100 hover:bg-gray-200 rounded-md px-3 py-2 text-sm"
-              onClick={() => handleExpand(song.id)}
+              className="bg-gray-100 hover:bg-gray-200 rounded-md px-3 py-2 text-sm flex items-center"
+              onClick={() => handleViewReviews(song.id)}
             >
-              {`Read Reviews (${otherReviewsCount})`}
+              Reviews ({otherReviewsCount})
+              {expandedSongId === song.id ? (
+                <ChevronUpIcon className="ml-1 h-4 w-4" />
+              ) : (
+                <ChevronDownIcon className="ml-1 h-4 w-4" />
+              )}
             </button>
           )}
         </div>

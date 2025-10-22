@@ -30,11 +30,6 @@ const RatingComponent: React.FC<RatingComponentProps> = ({
         readonly={isSubmitting}
       />{" "}
       <span className="ml-2 text-sm font-medium">{localValue.toFixed(1)}</span>
-      {isSubmitting && (
-        <div className="ml-2">
-          <LoadingSpinner />
-        </div>
-      )}
     </div>
   );
 };

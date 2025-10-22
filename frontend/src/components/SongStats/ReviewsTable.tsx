@@ -29,7 +29,7 @@ const ReviewsTable = ({
 }: TableProps) => {
   const { user } = useAuth();
   const isAuthenticated = !!user;
-  const [expandedSongId, setExpandedSongId] = useState<number | null>(null);
+  const [expandedSongIds, setExpandedSongIds] = useState<number[]>([]);
   const [reviews, setReviews] = useState<Record<number, UserReview[]>>({});
   const [error, setError] = useState<string | null>(null);
   const [state, setState] = useState<ReviewState>({
@@ -39,6 +39,8 @@ const ReviewsTable = ({
     reviews: {},
     loading: {},
   });
+  const [isEditMode, setIsEditMode] = useState(false);
+  const [expandedSongId, setExpandedSongId] = useState<number | null>(null);
 
   const currentRatings = useMemo(
     () =>
@@ -69,6 +71,110 @@ const ReviewsTable = ({
     }));
   };
 
+  const toggleEditMode = () => {
+    setIsEditMode(!isEditMode);
+
+    if (!isEditMode) {
+      // Expand ALL songs for editing
+      const allSongIds = songStats.map((song) => song.id);
+
+      // Fetch reviews for all songs
+      allSongIds.forEach((songId) => {
+        const song = songStats.find((s) => s.id === songId);
+
+        // Find the current user's review for this song
+        const currentUserReview = song?.userReviews?.find(
+          (review) => review.userId === user?.id
+        );
+
+        updateReviewState({
+          ratings: {
+            [songId]: song?.currentUserRating ?? 0,
+          },
+          contents: {
+            [songId]: currentUserReview?.content || "",
+          },
+        });
+        handleExpand(songId);
+      });
+    } else {
+      // When exiting edit mode, collapse all
+      setExpandedSongId(null);
+    }
+  };
+  const handleExpand = useCallback(
+    async (songId: number) => {
+      // If expanded, collapse
+      if (expandedSongId === songId) {
+        setExpandedSongId(null);
+        return;
+      }
+
+      // If reviews are not loaded, fetch them
+      if (!state.reviews[songId]?.length) {
+        updateReviewState({ loading: { [songId]: true } });
+
+        try {
+          // Fetch public reviews
+          const params = new URLSearchParams({
+            songId: songId.toString(),
+            ...(filters.groupId !== "all" && {
+              groupId: filters.groupId,
+              includeRatings: "true",
+            }),
+          });
+
+          const response = await fetchWrapper(`/reviews/song?${params}`, {
+            headers: getAuthHeaders(),
+          });
+
+          // Filter reviews with content
+          const filteredReviews = response.reviews;
+
+          // Check if user has existing review
+          const userReview = response.reviews.find(
+            (r: UserReview) => r.userId === user?.id
+          );
+
+          updateReviewState({
+            reviews: { [songId]: filteredReviews },
+            contents: { [songId]: userReview?.content || "" },
+            loading: { [songId]: false },
+          });
+        } catch (err) {
+          updateReviewState({ loading: { [songId]: false } });
+        }
+      }
+
+      // Set the expanded song ID
+      setExpandedSongId(songId);
+    },
+    [filters.groupId, user?.id, state.reviews]
+  );
+
+  const handleEditReview = useCallback(
+    (songId: number) => {
+      // Find the current user's review for this song
+      const song = songStats.find((s) => s.id === songId);
+      const currentUserReview = song?.userReviews?.find(
+        (review) => review.userId === user?.id
+      );
+
+      // Update state with current user's review details
+      updateReviewState({
+        ratings: {
+          [songId]: song?.currentUserRating ?? 0,
+        },
+        contents: {
+          [songId]: currentUserReview?.content || "",
+        },
+      });
+
+      // Set the expanded song ID
+      setExpandedSongId(songId);
+    },
+    [songStats, user?.id]
+  );
   const isCurrentUserSelected = filters.userId === String(user?.id);
 
   const contentsRef = useRef<Record<number, string>>({});
@@ -188,49 +294,6 @@ const ReviewsTable = ({
     [songStats, onReviewSubmitted]
   );
 
-  const handleExpand = useCallback(
-    async (songId: number) => {
-      const isExpanding = expandedSongId !== songId;
-      setExpandedSongId(isExpanding ? songId : null);
-
-      if (isExpanding) {
-        updateReviewState({ loading: { [songId]: true } });
-
-        try {
-          // Fetch public reviews
-          const params = new URLSearchParams({
-            songId: songId.toString(),
-            ...(filters.groupId !== "all" && {
-              groupId: filters.groupId,
-              includeRatings: "true",
-            }),
-          });
-
-          const response = await fetchWrapper(`/reviews/song?${params}`, {
-            headers: getAuthHeaders(),
-          });
-
-          // Filter reviews with content
-          const filteredReviews = response.reviews;
-
-          // Check if user has existing review
-          const userReview = response.reviews.find(
-            (r: UserReview) => r.userId === user?.id
-          );
-
-          updateReviewState({
-            reviews: { [songId]: filteredReviews },
-            contents: { [songId]: userReview?.content || "" },
-            loading: { [songId]: false },
-          });
-        } catch (err) {
-          updateReviewState({ loading: { [songId]: false } });
-        }
-      }
-    },
-    [expandedSongId, filters.groupId, user?.id]
-  );
-
   const getAuthHeaders = () => {
     const headers: { "Content-Type": string; Authorization?: string } = {
       "Content-Type": "application/json",
@@ -263,6 +326,34 @@ const ReviewsTable = ({
   };
   return (
     <div className="overflow-x-auto rounded-lg border border-gray-200 shadow-sm select-none">
+      <div className="px-4 py-3 bg-gray-50 flex justify-end">
+        {isAuthenticated && (
+          <button
+            onClick={toggleEditMode}
+            className={`
+    px-4 py-3 
+    rounded-sm 
+    text-white-smoke 
+    font-semibold 
+    transition-all 
+    duration-300 
+    ease-in-out 
+    ${
+      isEditMode
+        ? "bg-blood-red hover:bg-cornell-red-2 "
+        : "bg-night hover:bg-blood-red "
+    }
+    transform 
+    hover:scale-105 
+    active:scale-95 
+    shadow-md 
+    hover:shadow-lg 
+  `}
+          >
+            {isEditMode ? "Save All Reviews" : "Edit Reviews"}
+          </button>
+        )}
+      </div>
       {error && (
         <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded mb-4">
           {error}
@@ -292,12 +383,10 @@ const ReviewsTable = ({
             </th>
 
             {/* Group Avg */}
-            {filters.groupId !== "all" ? (
+            {filters.groupId !== "all" && (
               <th className="px-4 py-3.5 text-right text-sm font-semibold text-gray-900">
                 Group Avg
               </th>
-            ) : (
-              <th className="px-4 py-3.5 text-right text-sm" />
             )}
 
             <th className="px-4 py-3.5 text-right text-sm font-semibold text-gray-900">
@@ -315,24 +404,66 @@ const ReviewsTable = ({
                 song={song}
                 isGroupView={filters.groupId !== "all"}
                 groupId={filters.groupId}
+                isEditMode={isEditMode}
                 isAuthenticated={isAuthenticated}
-                expandedSongId={expandedSongId}
+                expandedSongId={
+                  isEditMode
+                    ? song.id
+                    : expandedSongIds.includes(song.id)
+                    ? song.id
+                    : null
+                }
                 currentRatings={currentRatings}
                 submitting={state.submitting}
                 handleExpand={handleExpand}
                 handleRatingChange={handleRatingChange}
                 filteredReviews={state.reviews[song.id] || []}
                 userId={user?.id}
+                handleEditReview={handleEditReview}
+                handleViewReviews={handleExpand}
               />
               {expandedSongId === song.id && (
                 <tr>
                   <td colSpan={6} className="px-4 py-4 bg-gray-50">
                     <div className="border-t border-gray-200 py-4">
+                      <h4 className="text-lg font-medium text-gray-900 mb-3">
+                        All Reviews ({song.reviewCount})
+                      </h4>
+
+                      {state.reviews[song.id]?.length > 0 ? (
+                        <div className="space-y-4">
+                          {state.reviews[song.id]
+                            .sort(
+                              (a, b) =>
+                                new Date(b.createdAt).getTime() -
+                                new Date(a.createdAt).getTime()
+                            )
+                            .map((review) => (
+                              <ReviewItem
+                                key={review.id}
+                                review={review}
+                                isCurrentUser={user?.id === review.userId}
+                                formatDate={formatDate}
+                              />
+                            ))}
+                        </div>
+                      ) : (
+                        <div className="text-center py-6 bg-gray-50 rounded border border-gray-200">
+                          <p className="text-gray-500">
+                            No reviews yet for this song.
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                  </td>
+                </tr>
+              )}
+              {isEditMode && (
+                <tr>
+                  <td colSpan={6} className="px-4 py-4 bg-gray-50">
+                    <div className="border-t border-gray-200 py-4">
                       {isAuthenticated && (
                         <div className="bg-white p-4 rounded-lg shadow-sm mb-4">
-                          <h4 className="text-lg font-medium text-gray-900 mb-3">
-                            Your Review
-                          </h4>
                           <div className="mb-3">
                             <label className="block text-sm font-medium text-gray-700 mb-1">
                               Rating
@@ -397,40 +528,6 @@ const ReviewsTable = ({
                               </button>
                             </form>
                           </div>
-                        </div>
-                      )}
-
-                      <h4 className="text-lg font-medium text-gray-900 mb-3">
-                        All Reviews ({song.reviewCount})
-                      </h4>
-
-                      {state.reviews[song.id]?.length > 0 ? (
-                        <div className="space-y-4">
-                          {state.reviews[song.id]
-                            .sort(
-                              (a, b) =>
-                                new Date(b.createdAt).getTime() -
-                                new Date(a.createdAt).getTime()
-                            )
-                            .map((review) => (
-                              <ReviewItem
-                                key={review.id}
-                                review={review}
-                                isCurrentUser={user?.id === review.userId}
-                                formatDate={formatDate}
-                              />
-                            ))}
-                        </div>
-                      ) : (
-                        <div className="text-center py-6 bg-gray-50 rounded border border-gray-200">
-                          <p className="text-gray-500">
-                            No reviews yet for this song.
-                          </p>
-                          {isAuthenticated && (
-                            <p className="text-sm text-gray-500 mt-1">
-                              Be the first to leave a review!
-                            </p>
-                          )}
                         </div>
                       )}
                     </div>
