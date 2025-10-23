@@ -92,6 +92,7 @@ const ChartComponent = React.memo(
         toolbar: {
           show: false,
         },
+        zoom: { enabled: false },
         animations: {
           enabled: true,
           speed: 400,
@@ -222,6 +223,7 @@ const ChartComponent = React.memo(
           },
         },
       },
+
       responsive: [
         {
           breakpoint: 768,
