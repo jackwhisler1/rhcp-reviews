@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { Album } from "../../types/rhcp-types";
 
 interface AlbumCarouselProps {
+  albums: Album[];
   onAlbumSelect: (album: { id: number; title: string }) => void;
   selectedAlbumId: number | null;
   layout?: "horizontal" | "vertical" | "auto";
@@ -11,23 +12,9 @@ const AlbumCarousel: React.FC<AlbumCarouselProps> = ({
   onAlbumSelect,
   selectedAlbumId,
   layout = "auto",
+  albums,
 }) => {
-  const [albums, setAlbums] = useState<Album[]>([]);
   const [isLargeScreen, setIsLargeScreen] = useState(false);
-
-  // Fetch albums
-  useEffect(() => {
-    const fetchAlbums = async () => {
-      try {
-        const response = await fetch("http://localhost:5000/api/albums");
-        const data = await response.json();
-        setAlbums(data.data);
-      } catch (error) {
-        console.error("Error fetching albums:", error);
-      }
-    };
-    fetchAlbums();
-  }, []);
 
   // Check screen size
   useEffect(() => {

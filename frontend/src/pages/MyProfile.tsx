@@ -24,62 +24,6 @@ const HomePage = () => {
     error: groupsError,
   } = useUserGroups(user?.id);
 
-  // Check for album ID in URL params
-  useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    const albumIdParam = params.get("albumId");
-
-    if (albumIdParam && !selectedAlbum.id) {
-      // Fetch album details if we have an ID in URL
-      const fetchAlbumDetails = async () => {
-        try {
-          const response = await fetch(
-            `http://localhost:5000/api/albums/${albumIdParam}`
-          );
-          if (response.ok) {
-            const album = await response.json();
-            setSelectedAlbum({
-              id: parseInt(albumIdParam),
-              title: album.title || "Album",
-            });
-          }
-        } catch (error) {
-          console.error("Error fetching album details:", error);
-        }
-      };
-
-      fetchAlbumDetails();
-    } else if (!selectedAlbum.id) {
-      // Default to first album if none selected
-      const fetchFirstAlbum = async () => {
-        try {
-          const response = await fetch("http://localhost:5000/api/albums");
-          const data = await response.json();
-          if (data.data && data.data.length > 0) {
-            const firstAlbum = data.data[0];
-            setSelectedAlbum({
-              id: firstAlbum.id,
-              title: firstAlbum.title,
-            });
-          }
-        } catch (error) {
-          console.error("Error fetching albums:", error);
-        }
-      };
-
-      fetchFirstAlbum();
-    }
-  }, [selectedAlbum.id]);
-
-  // Update URL when album changes
-  useEffect(() => {
-    if (selectedAlbum.id) {
-      const url = new URL(window.location.href);
-      url.searchParams.set("albumId", selectedAlbum.id.toString());
-      window.history.replaceState({}, "", url.toString());
-    }
-  }, [selectedAlbum.id]);
-
   return (
     <>
       <BaseContainer>

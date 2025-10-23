@@ -24,13 +24,18 @@ export const getAlbumSongStatsService = async ({
   userId,
   selectedUserId,
 }: SongStatsParams) => {
-  // Get all songs in the album
   const songs = await prisma.song.findMany({
     where: { albumId },
-    select: { id: true, title: true, trackNumber: true, duration: true },
+    include: {
+      _count: {
+        select: {
+          reviews: true,
+        },
+      },
+    },
   });
 
-  // Public stats (all reviews for songs in album)
+  // Modify your query to include review counts and averages
   const publicStats = await prisma.review.groupBy({
     by: ["songId"],
     where: { song: { albumId } },
@@ -96,6 +101,7 @@ export const getAlbumSongStatsService = async ({
       duration: song.duration,
       publicAverage: all?._avg.rating || 0,
       publicReviewCount: all?._count.rating || 0,
+      reviewCount: song._count.reviews || 0,
       groupAverage: group?._avg.rating ?? null,
       groupReviewCount: group?._count.rating ?? null,
       currentUserRating: userReview?.rating ?? null,
@@ -118,21 +124,32 @@ export const getPaginatedAlbumsService = async (params: {
     prisma.album.count({ where }),
     prisma.album.findMany({
       where,
+      select: {
+        id: true,
+        title: true,
+        releaseDate: true,
+        artworkUrl: true,
+        _count: {
+          select: { songs: true },
+        },
+      },
       skip: (params.page - 1) * params.limit,
       take: params.limit,
       orderBy: { releaseDate: "desc" },
-      include: {
-        songs: {
-          include: {
-            reviews: true,
-          },
-        },
-      },
     }),
   ]);
 
+  // Transform the result to include song count
+  const transformedAlbums = albums.map((album) => ({
+    id: album.id,
+    title: album.title,
+    releaseDate: album.releaseDate,
+    artworkUrl: album.artworkUrl,
+    songCount: album._count.songs,
+  }));
+
   return {
-    data: albums,
+    data: transformedAlbums,
     meta: {
       total,
       page: params.page,

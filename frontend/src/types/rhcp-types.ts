@@ -4,7 +4,7 @@ export interface SongStat {
   trackNumber: number;
   duration: string;
   publicAverage: number;
-  reviewCount: number;
+  publicReviewCount: number;
   groupAverage: number;
   groupReviewCount: number;
   currentUserRating?: number;

@@ -51,6 +51,8 @@ const SongStats = ({
   // Sync local stats with API data
   useEffect(() => {
     if (stats.length > 0) {
+      console.log("Received album stats:", stats);
+
       setLocalStats(stats);
     }
   }, [stats]);
@@ -142,6 +144,7 @@ const SongStats = ({
               onAlbumSelect={handleAlbumSelect}
               selectedAlbumId={selectedAlbum?.id}
               layout="vertical"
+              albums={albums}
             />
           </div>
           <div className="w-3/4 p-4">
@@ -156,6 +159,7 @@ const SongStats = ({
         <div>
           <div className="w-full p-4">
             <AlbumCarousel
+              albums={albums}
               onAlbumSelect={handleAlbumSelect}
               selectedAlbumId={selectedAlbum?.id}
               layout="horizontal"

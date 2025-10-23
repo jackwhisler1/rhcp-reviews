@@ -104,18 +104,17 @@ const ReviewsTable = ({
   };
   const handleExpand = useCallback(
     async (songId: number) => {
-      // If expanded, collapse
-      if (expandedSongId === songId) {
-        setExpandedSongId(null);
-        return;
-      }
-
-      // If reviews are not loaded, fetch them
-      if (!state.reviews[songId]?.length) {
+      setExpandedSongIds(
+        (prev) =>
+          prev.includes(songId)
+            ? prev.filter((id) => id !== songId) // collapse
+            : [...prev, songId] // expand
+      );
+      // Optionally, trigger `loading`/fetch reviews only when expanding
+      if (!state.reviews[songId]) {
         updateReviewState({ loading: { [songId]: true } });
-
         try {
-          // Fetch public reviews
+          // fetch reviews
           const params = new URLSearchParams({
             songId: songId.toString(),
             ...(filters.groupId !== "all" && {
@@ -123,35 +122,18 @@ const ReviewsTable = ({
               includeRatings: "true",
             }),
           });
-
-          const response = await fetchWrapper(`/reviews/song?${params}`, {
-            headers: getAuthHeaders(),
-          });
-
-          // Filter reviews with content
-          const filteredReviews = response.reviews;
-
-          // Check if user has existing review
-          const userReview = response.reviews.find(
-            (r: UserReview) => r.userId === user?.id
-          );
-
+          const response = await fetchWrapper(`/reviews/song?${params}`);
           updateReviewState({
-            reviews: { [songId]: filteredReviews },
-            contents: { [songId]: userReview?.content || "" },
+            reviews: { [songId]: response.reviews },
             loading: { [songId]: false },
           });
         } catch (err) {
           updateReviewState({ loading: { [songId]: false } });
         }
       }
-
-      // Set the expanded song ID
-      setExpandedSongId(songId);
     },
-    [filters.groupId, user?.id, state.reviews]
+    [filters.groupId, state.reviews]
   );
-
   const handleEditReview = useCallback(
     (songId: number) => {
       // Find the current user's review for this song
@@ -192,7 +174,8 @@ const ReviewsTable = ({
       if (!songData) return;
 
       const isNewReview = !songData.currentUserReviewId;
-      const tempReviewCount = songData.reviewCount + (isNewReview ? 1 : 0);
+      const tempReviewCount =
+        songData.publicReviewCount + (isNewReview ? 1 : 0);
 
       // Optimistic update
       const content = contentsRef.current[songId] || "";
@@ -241,7 +224,7 @@ const ReviewsTable = ({
       onReviewSubmitted?.({
         ...songData,
         currentUserRating: rating,
-        reviewCount: tempReviewCount,
+        publicReviewCount: tempReviewCount,
         currentUserReviewId: songData.currentUserReviewId || Date.now(), // Temp ID
       });
 
@@ -284,7 +267,8 @@ const ReviewsTable = ({
           ...songData,
           currentUserRating: rating,
           currentUserReviewId: response.id,
-          reviewCount: songData.reviewCount + (method === "POST" ? 1 : 0),
+          publicReviewCount:
+            songData.publicReviewCount + (method === "POST" ? 1 : 0),
         });
       } catch (err) {
         // Rollback
@@ -406,13 +390,7 @@ const ReviewsTable = ({
                 groupId={filters.groupId}
                 isEditMode={isEditMode}
                 isAuthenticated={isAuthenticated}
-                expandedSongId={
-                  isEditMode
-                    ? song.id
-                    : expandedSongIds.includes(song.id)
-                    ? song.id
-                    : null
-                }
+                isExpanded={expandedSongIds.includes(song.id)}
                 currentRatings={currentRatings}
                 submitting={state.submitting}
                 handleExpand={handleExpand}
@@ -422,39 +400,31 @@ const ReviewsTable = ({
                 handleEditReview={handleEditReview}
                 handleViewReviews={handleExpand}
               />
-              {expandedSongId === song.id && (
+              {expandedSongIds.includes(song.id) && (
                 <tr>
                   <td colSpan={6} className="px-4 py-4 bg-gray-50">
-                    <div className="border-t border-gray-200 py-4">
-                      <h4 className="text-lg font-medium text-gray-900 mb-3">
-                        All Reviews ({song.reviewCount})
-                      </h4>
-
-                      {state.reviews[song.id]?.length > 0 ? (
-                        <div className="space-y-4">
-                          {state.reviews[song.id]
-                            .sort(
-                              (a, b) =>
-                                new Date(b.createdAt).getTime() -
-                                new Date(a.createdAt).getTime()
-                            )
-                            .map((review) => (
-                              <ReviewItem
-                                key={review.id}
-                                review={review}
-                                isCurrentUser={user?.id === review.userId}
-                                formatDate={formatDate}
-                              />
-                            ))}
-                        </div>
-                      ) : (
-                        <div className="text-center py-6 bg-gray-50 rounded border border-gray-200">
-                          <p className="text-gray-500">
-                            No reviews yet for this song.
-                          </p>
-                        </div>
-                      )}
-                    </div>
+                    {state.loading[song.id] ? (
+                      <div>Loading...</div>
+                    ) : (
+                      <div>
+                        {/* Always show your review first (if present) */}
+                        {[
+                          ...state.reviews[song.id].filter(
+                            (r) => r.userId === user?.id
+                          ),
+                          ...state.reviews[song.id].filter(
+                            (r) => r.userId !== user?.id
+                          ),
+                        ].map((review) => (
+                          <ReviewItem
+                            key={review.id}
+                            review={review}
+                            isCurrentUser={user?.id === review.userId}
+                            formatDate={formatDate}
+                          />
+                        ))}
+                      </div>
+                    )}
                   </td>
                 </tr>
               )}
