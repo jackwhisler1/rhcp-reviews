@@ -158,6 +158,10 @@ export const useAlbumStats = (
               typeof song.selectedUserRating === "number"
                 ? song.selectedUserRating
                 : null,
+            selectedUserReviewContent:
+              typeof song.selectedUserRating === "string"
+                ? song.selectedUserReviewContent
+                : null,
             publicAverage:
               typeof song.publicAverage === "number" ? song.publicAverage : 0,
             publicReviewCount:

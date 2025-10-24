@@ -10,6 +10,7 @@ export interface SongStat {
   currentUserRating?: number;
   selectedUserRating?: number;
   currentUserReviewId: number | null;
+  currentUserReviewContent?: string | null;
   userReviews?: UserReview[];
 }
 

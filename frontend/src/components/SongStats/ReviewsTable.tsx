@@ -136,19 +136,18 @@ const ReviewsTable = ({
   );
   const handleEditReview = useCallback(
     (songId: number) => {
+      console.log("songId" + songId);
       // Find the current user's review for this song
       const song = songStats.find((s) => s.id === songId);
-      const currentUserReview = song?.userReviews?.find(
-        (review) => review.userId === user?.id
-      );
-
+      const currentUserRating = song?.currentUserRating;
+      const currentUserReviewContent = song?.currentUserReviewContent;
       // Update state with current user's review
       updateReviewState({
         ratings: {
-          [songId]: song?.currentUserRating ?? 0,
+          [songId]: currentUserRating ?? 0,
         },
         contents: {
-          [songId]: currentUserReview?.content || "",
+          [songId]: currentUserReviewContent || "",
         },
       });
 

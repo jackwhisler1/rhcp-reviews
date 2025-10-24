@@ -15,7 +15,7 @@ const ReviewItem: React.FC<ReviewItemProps> = ({
   formatDate,
 }) => {
   const color = review.author.avatarColor || "";
-  console.log(review);
+  // useEffect() => {} // TODO: set color when saved
   return (
     <div className="bg-white p-3 rounded border border-gray-200">
       <div className="flex justify-between items-start">

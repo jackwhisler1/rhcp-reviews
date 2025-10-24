@@ -85,7 +85,7 @@ const ReviewRow: React.FC<ReviewRowProps> = ({
           {/* Edit Review Button (always visible when not in edit mode) */}
           {isAuthenticated && !isEditMode && (
             <button
-              className="text-gray-600 hover:text-gray-900"
+              className="text-gray-800 hover:text-gray-900"
               onClick={() => handleEditReview(song.id)}
               title="Edit Review"
             >
