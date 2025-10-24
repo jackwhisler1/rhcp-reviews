@@ -25,7 +25,7 @@ export interface UserReview {
   userId: number;
   songId: number;
   groupId?: number;
-  author: { id: number; username: string; image?: string | null };
+  author: { id: number; username: string; avatarColor?: string | null };
   rating: number;
   content: string;
   createdAt: string;

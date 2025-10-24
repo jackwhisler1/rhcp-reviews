@@ -1,6 +1,7 @@
 import React from "react";
 import { Rating } from "react-simple-star-rating";
 import { UserReview } from "../../types/rhcp-types";
+import { ReactComponent as PepperAvatar } from "../../assets/pepper-avatar.svg";
 
 interface ReviewItemProps {
   review: UserReview;
@@ -13,20 +14,17 @@ const ReviewItem: React.FC<ReviewItemProps> = ({
   isCurrentUser,
   formatDate,
 }) => {
+  const color = review.author.avatarColor || "";
+  console.log(review);
   return (
     <div className="bg-white p-3 rounded border border-gray-200">
       <div className="flex justify-between items-start">
         <div className="flex items-center">
-          <div className="flex-shrink-0">
-            <img
-              className="h-8 w-8 rounded-full"
-              src={review.author?.image || "/images/default-user.png"}
-              alt={review.author?.username || "User"}
-              onError={(e) => {
-                e.currentTarget.onerror = null;
-                e.currentTarget.src = "/images/default-user.png";
-              }}
-            />
+          <div
+            className="w-7 h-7 rounded-full flex items-center justify-center"
+            style={{ backgroundColor: color }}
+          >
+            <PepperAvatar className="w-5 h-5" />
           </div>
           <div className="ml-3">
             <p className="text-sm font-medium text-gray-900">

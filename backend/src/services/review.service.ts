@@ -165,7 +165,7 @@ export const getSongReviewsService = async (
         select: {
           id: true,
           username: true,
-          image: true,
+          avatarColor: true,
         },
       },
     },
