@@ -82,7 +82,7 @@ export const getAlbumSongStatsService = async ({
       select: { songId: true, rating: true, id: true },
       orderBy: { createdAt: "desc" },
     });
-    console.log("selectedUserReviews:");
+    console.log("selectedUserReviews:", selectedUserReviews);
   }
 
   // Merge data
