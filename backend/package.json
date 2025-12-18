@@ -22,6 +22,9 @@
   "author": "",
   "license": "ISC",
   "type": "module",
+  "prisma": {
+"seed": "node prisma/seed.js"
+  },
   "dependencies": {
     "@types/bcryptjs": "^2.4.6",
     "@types/nodemailer": "^6.4.17",

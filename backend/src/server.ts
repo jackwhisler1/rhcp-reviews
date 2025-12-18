@@ -132,7 +132,7 @@ function setupMiddleware() {
 
 function setupRoutes() {
   // Debug endpoint to list available images
-  app.get("/api/debug/images", (req, res) => {
+  app.get("/api/debug/images", (req: any, res: any) => {
     const fs = require("fs");
     const uploadsDir = path.join(directory, "uploads");
 
@@ -145,7 +145,7 @@ function setupRoutes() {
       }
 
       const files = fs.readdirSync(uploadsDir);
-      const imageDetails = files.map((file) => {
+      const imageDetails = files.map((file: any) => {
         const stats = fs.statSync(path.join(uploadsDir, file));
         return {
           name: file,
@@ -254,6 +254,3 @@ async function main() {
     process.exit(1);
   }
 }
-
-// Start the server whether imported or run directly
-main();
