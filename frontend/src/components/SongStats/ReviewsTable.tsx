@@ -41,6 +41,8 @@ const ReviewsTable = ({
   });
   const [isEditMode, setIsEditMode] = useState(false);
   const [expandedSongId, setExpandedSongId] = useState<number | null>(null);
+  const [individuallyEditingSongIds, setIndividuallyEditingSongIds] = useState<number[]>([]);
+  const [manuallyExpandedReviewIds, setManuallyExpandedReviewIds] = useState<number[]>([]);
 
   const currentRatings = useMemo(
     () =>
@@ -81,58 +83,70 @@ const ReviewsTable = ({
       // Fetch reviews for all songs
       allSongIds.forEach((songId) => {
         const song = songStats.find((s) => s.id === songId);
-
-        // Find the current user's review for this song
-        const currentUserReview = song?.userReviews?.find(
-          (review) => review.userId === user?.id
-        );
+        const contentValue = song?.currentUserReviewContent || "";
 
         updateReviewState({
           ratings: {
             [songId]: song?.currentUserRating ?? 0,
           },
           contents: {
-            [songId]: currentUserReview?.content || "",
+            [songId]: contentValue,
           },
         });
-        handleExpand(songId);
+        // Populate contentsRef so handleRatingChange can access it
+        contentsRef.current[songId] = contentValue;
+        
+        // Fetch reviews for this song
+        if (!state.reviews[songId]) {
+          fetchReviews(songId);
+        }
+        
+        // Expand the song
+        setExpandedSongIds((prev) =>
+          prev.includes(songId) ? prev : [...prev, songId]
+        );
       });
+      
+      // In global edit mode, keep reviews hidden by default (user can toggle)
+      setManuallyExpandedReviewIds([]);
     } else {
-      // When exiting edit mode, collapse all
+      // When exiting edit mode, collapse all and clear individual editing
       setExpandedSongId(null);
+      setIndividuallyEditingSongIds([]);
+      setExpandedSongIds([]);
+      setManuallyExpandedReviewIds([]);
+      contentsRef.current = {};
     }
   };
   const handleExpand = useCallback(
     async (songId: number) => {
-      setExpandedSongIds(
-        (prev) =>
-          prev.includes(songId)
-            ? prev.filter((id) => id !== songId) // collapse
-            : [...prev, songId] // expand
-      );
-      // Optionally, trigger `loading`/fetch reviews only when expanding
-      if (!state.reviews[songId]) {
-        updateReviewState({ loading: { [songId]: true } });
-        try {
-          // fetch reviews
-          const params = new URLSearchParams({
-            songId: songId.toString(),
-            ...(filters.groupId !== "all" && {
-              groupId: filters.groupId,
-              includeRatings: "true",
-            }),
-          });
-          const response = await fetchWrapper(`/reviews/song?${params}`);
-          updateReviewState({
-            reviews: { [songId]: response.reviews },
-            loading: { [songId]: false },
-          });
-        } catch (err) {
-          updateReviewState({ loading: { [songId]: false } });
+      // If we're in edit mode or editing this song individually, toggling
+      // the reviews shouldn't collapse the edit form. Only toggle the
+      // manual reviews visibility and ensure the edit area is present.
+      if (isEditMode || individuallyEditingSongIds.includes(songId)) {
+        setManuallyExpandedReviewIds((prev) =>
+          prev.includes(songId) ? prev.filter((id) => id !== songId) : [...prev, songId]
+        );
+        setExpandedSongIds((prev) => (prev.includes(songId) ? prev : [...prev, songId]));
+        if (!state.reviews[songId]) {
+          fetchReviews(songId);
         }
+        return;
+      }
+
+      // Default behavior (not editing): expand/collapse and toggle reviews
+      setExpandedSongIds((prev) =>
+        prev.includes(songId) ? prev.filter((id) => id !== songId) : [...prev, songId]
+      );
+      setManuallyExpandedReviewIds((prev) =>
+        prev.includes(songId) ? prev.filter((id) => id !== songId) : [...prev, songId]
+      );
+
+      if (!state.reviews[songId]) {
+        fetchReviews(songId);
       }
     },
-    [filters.groupId, state.reviews]
+    [filters.groupId, state.reviews, isEditMode, individuallyEditingSongIds]
   );
   const handleEditReview = useCallback(
     (songId: number) => {
@@ -151,11 +165,41 @@ const ReviewsTable = ({
         },
       });
 
-      // Set the expanded song ID
-      setExpandedSongId(songId);
+      // Expand this song and mark it as individually being edited
+      setExpandedSongIds((prev) =>
+        prev.includes(songId) ? prev : [...prev, songId]
+      );
+      setIndividuallyEditingSongIds((prev) =>
+        prev.includes(songId) ? prev : [...prev, songId]
+      );
+      
+      // Fetch reviews for this song
+      if (!state.reviews[songId]) {
+        updateReviewState({ loading: { [songId]: true } });
+        fetchReviews(songId);
+      }
     },
-    [songStats, user?.id]
+    [songStats, state.reviews, user?.id]
   );
+
+  const fetchReviews = async (songId: number) => {
+    try {
+      const params = new URLSearchParams({
+        songId: songId.toString(),
+        ...(filters.groupId !== "all" && {
+          groupId: filters.groupId,
+          includeRatings: "true",
+        }),
+      });
+      const response = await fetchWrapper(`/reviews/song?${params}`);
+      updateReviewState({
+        reviews: { [songId]: response.reviews },
+        loading: { [songId]: false },
+      });
+    } catch (err) {
+      updateReviewState({ loading: { [songId]: false } });
+    }
+  };
   const isCurrentUserSelected = filters.userId === String(user?.id);
 
   const contentsRef = useRef<Record<number, string>>({});
@@ -176,8 +220,8 @@ const ReviewsTable = ({
       const tempReviewCount =
         songData.publicReviewCount + (isNewReview ? 1 : 0);
 
-      // Optimistic update
-      const content = contentsRef.current[songId] || "";
+      // Optimistic update - read content from state, not ref
+      const content = state.contents[songId] || "";
 
       setState((prev) => {
         const existingReviews = prev.reviews[songId] || [];
@@ -257,8 +301,8 @@ const ReviewsTable = ({
             },
           }));
         }
+        // Don't update contents from response - keep what user typed
         updateReviewState({
-          contents: { [songId]: response.content },
           submitting: { [songId]: false },
         });
         // Final update with actual data
@@ -321,11 +365,9 @@ const ReviewsTable = ({
     transition-all 
     duration-300 
     ease-in-out 
-    ${
-      isEditMode
-        ? "bg-blood-red hover:bg-cornell-red-2 "
-        : "bg-night hover:bg-blood-red "
-    }
+    bg-cornell-red-2 
+  hover:bg-blood-red 
+    
     transform 
     hover:scale-105 
     active:scale-95 
@@ -396,10 +438,11 @@ const ReviewsTable = ({
                 handleRatingChange={handleRatingChange}
                 filteredReviews={state.reviews[song.id] || []}
                 userId={user?.id}
-                handleEditReview={handleEditReview}
-                handleViewReviews={handleExpand}
+                  handleEditReview={handleEditReview}
+                  handleViewReviews={handleExpand}
+                  reviewsVisible={manuallyExpandedReviewIds.includes(song.id)}
               />
-              {expandedSongIds.includes(song.id) && (
+              {expandedSongIds.includes(song.id) && manuallyExpandedReviewIds.includes(song.id) && (
                 <tr>
                   <td colSpan={6} className="px-4 py-4 bg-gray-50">
                     {state.loading[song.id] ? (
@@ -408,10 +451,10 @@ const ReviewsTable = ({
                       <div>
                         {/* Always show your review first (if present) */}
                         {[
-                          ...state.reviews[song.id].filter(
+                          ...(state.reviews[song.id] || []).filter(
                             (r) => r.userId === user?.id
                           ),
-                          ...state.reviews[song.id].filter(
+                          ...(state.reviews[song.id] || []).filter(
                             (r) => r.userId !== user?.id
                           ),
                         ].map((review) => (
@@ -427,7 +470,7 @@ const ReviewsTable = ({
                   </td>
                 </tr>
               )}
-              {isEditMode && (
+              {(isEditMode || individuallyEditingSongIds.includes(song.id)) && (
                 <tr>
                   <td colSpan={6} className="px-4 py-4 bg-gray-50">
                     <div className="border-t border-gray-200 py-4">
@@ -478,10 +521,10 @@ const ReviewsTable = ({
                             <form onSubmit={(e) => e.preventDefault()}>
                               <button
                                 type="button"
-                                className={`bg-indigo-600 text-white px-4 py-2 rounded-md ${
+                                className={`bg-blood-red hover:bg-cornell-red-2 text-white px-4 py-2 rounded-md transition-all duration-300 ${
                                   state.submitting[song.id]
                                     ? "opacity-50 cursor-not-allowed"
-                                    : ""
+                                    : "hover:scale-105"
                                 }`}
                                 onClick={() =>
                                   handleRatingChange(
@@ -507,6 +550,30 @@ const ReviewsTable = ({
           ))}
         </tbody>
       </table>
+      {isEditMode && isAuthenticated && (
+        <div className="px-4 py-3 bg-gray-50 flex justify-end border-t border-gray-200">
+          <button
+            onClick={toggleEditMode}
+            className={`
+    px-4 py-3 
+    rounded-sm 
+    text-white-smoke 
+    font-semibold 
+    transition-all 
+    duration-300 
+    ease-in-out 
+    bg-night hover:bg-blood-red
+    transform 
+    hover:scale-105 
+    active:scale-95 
+    shadow-md 
+    hover:shadow-lg 
+  `}
+          >
+            Save All Reviews
+          </button>
+        </div>
+      )}
     </div>
   );
 };

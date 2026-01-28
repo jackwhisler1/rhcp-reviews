@@ -14,6 +14,7 @@ interface ReviewRowProps {
   isAuthenticated: boolean;
   isEditMode: boolean;
   isExpanded: boolean;
+  reviewsVisible?: boolean;
   currentRatings: { [key: number]: number };
   submitting: { [key: number]: boolean };
   handleExpand: (songId: number) => void;
@@ -30,6 +31,7 @@ const ReviewRow: React.FC<ReviewRowProps> = ({
   groupId,
   isAuthenticated,
   isEditMode,
+  reviewsVisible,
   currentRatings,
   isExpanded,
   submitting,
@@ -100,7 +102,7 @@ const ReviewRow: React.FC<ReviewRowProps> = ({
               onClick={() => handleExpand(song.id)}
             >
               Reviews ({otherReviewsCount})
-              {isExpanded ? (
+              {reviewsVisible ? (
                 <ChevronUpIcon className="ml-1 h-4 w-4" />
               ) : (
                 <ChevronDownIcon className="ml-1 h-4 w-4" />
